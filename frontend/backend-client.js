@@ -19,7 +19,8 @@ async function loadDatabaseState() {
   try {
     const health = await apiRequest('/health');
     if (!health.ok) return;
-    const [students, attendance] = await Promise.all([apiRequest('/students'), apiRequest('/attendance')]);
+    const selectedDate = document.querySelector('#recordDate').value;
+    const [students, attendance] = await Promise.all([apiRequest('/students'), apiRequest(`/attendance${selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''}`)]);
     backendOnline = true;
     ui.setDatabaseState(students, attendance);
     ui.toast('Connected to the MySQL attendance database.');
@@ -34,6 +35,7 @@ async function submitDatabaseCheckIn(code) {
   try {
     const result = await apiRequest('/attendance/check-in', { method: 'POST', body: JSON.stringify({ code }) });
     if (!ui.state.students.some((student) => student.id === result.student.id)) ui.state.students.push(result.student);
+    ui.state.attendance = ui.state.attendance.filter((record) => !(record.studentId === result.student.id && record.date === result.record.date && record.status === 'Absent'));
     ui.state.attendance.unshift(result.record);
     ui.refresh();
     ui.showScanResult(`✓ ${result.student.name} marked ${result.record.status.toLowerCase()} at ${result.record.time}.`, 'success');
@@ -97,6 +99,15 @@ document.querySelector('#manualCheckin').addEventListener('click', async (event)
   const input = document.querySelector('#manualToken');
   const completed = await submitDatabaseCheckIn(input.value.trim());
   if (completed) input.value = '';
+}, true);
+
+document.querySelector('#recordDate').addEventListener('change', async () => {
+  if (!backendOnline) return;
+  try {
+    const date = document.querySelector('#recordDate').value;
+    ui.state.attendance = await apiRequest(`/attendance${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+    ui.refresh();
+  } catch (error) { ui.toast(error.message); }
 }, true);
 
 loadDatabaseState();

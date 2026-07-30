@@ -19,7 +19,7 @@ function avatar(student, index = 0) { return `<span class="student-avatar ${['',
 function render() { renderDashboard(); renderStudents(); renderRecords(); updateCourseFilter(); updateSectionFilters(); updateYearFilter(); }
 function renderDashboard() {
   const current = state.attendance.filter(record => record.date === today());
-  const present = current.length;
+  const present = current.filter(record => record.status !== 'Absent').length;
   const late = current.filter(record => record.status === 'Late').length;
   const percent = state.students.length ? Math.round(present / state.students.length * 100) : 0;
   $('#studentCount').textContent = state.students.length;
@@ -29,7 +29,7 @@ function renderDashboard() {
   $('#attendancePercent').textContent = `${percent}%`;
   $('#attendanceProgress').style.width = `${percent}%`;
   $('#presentSummary').textContent = `${present} of ${state.students.length} students checked in`;
-  const entries = [...state.attendance].sort((a,b) => b.createdAt - a.createdAt).slice(0, 4);
+  const entries = state.attendance.filter(record => record.status !== 'Absent').sort((a,b) => b.createdAt - a.createdAt).slice(0, 4);
   $('#recentCheckins').innerHTML = entries.length ? entries.map((record, i) => {
     const student = state.students.find(s => s.id === record.studentId) || { name: 'Deleted student', roll: '—' };
     return `<div class="checkin-row">${avatar(student, i)}<div class="checkin-main"><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.roll)} · ${escapeHtml(student.course || '')}</small></div><span class="checkin-time">${record.time}</span><span class="status ${record.status.toLowerCase()}">${record.status.toUpperCase()}</span></div>`;

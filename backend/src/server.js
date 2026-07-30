@@ -55,6 +55,51 @@ app.get('/api/health', async (_request, response) => {
   catch { response.status(503).json({ ok: false, database: 'unavailable' }); }
 });
 
+app.get('/api/public/summary', async (_request, response, next) => {
+  try {
+    const [[studentCount]] = await pool.query('SELECT COUNT(*) AS totalStudents FROM students');
+    const [[todayStats]] = await pool.query(`SELECT
+      COUNT(*) AS checkedIn,
+      SUM(status = 'Present') AS presentToday,
+      SUM(status = 'Late') AS lateCheckins
+      FROM attendance WHERE attendance_date = CURDATE()`);
+    const totalStudents = Number(studentCount.totalStudents || 0);
+    const checkedIn = Number(todayStats.checkedIn || 0);
+    response.json({
+      totalStudents,
+      presentToday: Number(todayStats.presentToday || 0),
+      lateCheckins: Number(todayStats.lateCheckins || 0),
+      attendanceRate: totalStudents ? Math.round((checkedIn / totalStudents) * 100) : 0,
+      checkedIn
+    });
+  } catch (error) { next(error); }
+});
+
+app.post('/api/public/check-in', async (request, response, next) => {
+  const code = String(request.body?.code || '').trim();
+  if (!code) { response.status(400).json({ error: 'QR token or roll number is required.' }); return; }
+  try {
+    const [students] = await pool.execute(`SELECT teacher_id AS teacherId, ${studentFields}
+      FROM students WHERE qr_token = ? OR roll_number = ? LIMIT 1`, [code, code]);
+    const student = students[0];
+    if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
+    const [settings] = await pool.execute(`SELECT TIME_FORMAT(start_time, '%H:%i:%s') AS startTime,
+      TIME_FORMAT(present_until, '%H:%i:%s') AS presentUntil, TIME_FORMAT(end_time, '%H:%i:%s') AS endTime
+      FROM class_attendance_settings WHERE teacher_id = ? AND course = ? LIMIT 1`, [student.teacherId, student.course]);
+    if (!settings.length) { response.status(409).json({ error: `Attendance timing is not configured for ${student.course}.` }); return; }
+    const timing = calculateAttendanceStatus(settings[0]);
+    if (!timing.allowed) { response.status(409).json({ error: timing.error }); return; }
+    const record = { id: crypto.randomUUID(), studentId: student.id, status: timing.status };
+    await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, CURDATE(), CURTIME(), ?)', [record.id, record.studentId, record.status]);
+    const [records] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a JOIN students s ON s.id = a.student_id WHERE a.id = ?`, [record.id]);
+    Object.assign(record, records[0]);
+    response.status(201).json({ record, student: { name: student.name, course: student.course, section: student.section } });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') { response.status(409).json({ error: 'This student is already marked today.' }); return; }
+    next(error);
+  }
+});
+
 app.post('/api/auth/register', async (request, response, next) => {
   const { name, email, password } = request.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -193,16 +238,38 @@ app.get('/api/attendance', async (request, response, next) => {
     const year = String(request.query.year || '').trim();
     const status = String(request.query.status || '').trim();
     const query = String(request.query.q || '').trim();
-    const conditions = ['s.teacher_id = ?'];
-    const values = [request.teacher.teacherId];
-    if (date) { conditions.push('a.attendance_date = ?'); values.push(date); }
-    if (/^\d{4}$/.test(year)) { conditions.push('YEAR(a.attendance_date) = ?'); values.push(Number(year)); }
-    if (status) { conditions.push('a.status = ?'); values.push(status); }
-    if (query) { conditions.push("(s.name LIKE CONCAT('%', ?, '%') OR s.roll_number LIKE CONCAT('%', ?, '%'))"); values.push(query, query); }
-    const [rows] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a
-      JOIN students s ON s.id = a.student_id
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY a.created_at DESC`, values);
+    let rows;
+    if (date) {
+      const conditions = ['s.teacher_id = ?'];
+      const values = [date, date, request.teacher.teacherId];
+      if (status === 'Absent') conditions.push('a.id IS NULL');
+      else if (status) { conditions.push('a.status = ?'); values.push(status); }
+      if (query) { conditions.push("(s.name LIKE CONCAT('%', ?, '%') OR s.roll_number LIKE CONCAT('%', ?, '%'))"); values.push(query, query); }
+      const [dateRows] = await pool.execute(`SELECT
+        COALESCE(a.id, CONCAT('absent-', s.id, '-', ?)) AS id,
+        s.id AS studentId,
+        ? AS date,
+        COALESCE(TIME_FORMAT(a.check_in_time, '%h:%i %p'), '—') AS time,
+        COALESCE(a.status, 'Absent') AS status,
+        s.section AS section,
+        COALESCE(UNIX_TIMESTAMP(a.created_at) * 1000, 0) AS createdAt
+        FROM students s
+        LEFT JOIN attendance a ON a.student_id = s.id AND a.attendance_date = ?
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY s.name`, [date, date, date, request.teacher.teacherId, ...values.slice(3)]);
+      rows = dateRows;
+    } else {
+      const conditions = ['s.teacher_id = ?'];
+      const values = [request.teacher.teacherId];
+      if (/^\d{4}$/.test(year)) { conditions.push('YEAR(a.attendance_date) = ?'); values.push(Number(year)); }
+      if (status) { conditions.push('a.status = ?'); values.push(status); }
+      if (query) { conditions.push("(s.name LIKE CONCAT('%', ?, '%') OR s.roll_number LIKE CONCAT('%', ?, '%'))"); values.push(query, query); }
+      const [attendanceRows] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a
+        JOIN students s ON s.id = a.student_id
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY a.created_at DESC`, values);
+      rows = attendanceRows;
+    }
     response.json(rows);
   } catch (error) { next(error); }
 });

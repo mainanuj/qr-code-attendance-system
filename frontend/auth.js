@@ -9,6 +9,7 @@ function initialsFromName(name) { return name.split(' ').filter(Boolean).map((pa
 function currentSession() { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; } }
 function activateSession(session) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  document.body.classList.remove('auth-mode');
   document.body.classList.add('authenticated');
   document.querySelector('#teacherName').textContent = session.teacher.name;
   document.querySelector('#teacherAvatar').textContent = initialsFromName(session.teacher.name);
@@ -33,7 +34,9 @@ function switchAuth(mode) {
 loginForm.addEventListener('submit', async (event) => { event.preventDefault(); authError.textContent = ''; try { activateSession(await authRequest('login', { email: document.querySelector('#loginEmail').value.trim(), password: document.querySelector('#loginPassword').value })); } catch (error) { authError.textContent = error.message; } });
 registerForm.addEventListener('submit', async (event) => { event.preventDefault(); authError.textContent = ''; try { activateSession(await authRequest('register', { name: document.querySelector('#registerName').value.trim(), email: document.querySelector('#registerEmail').value.trim(), password: document.querySelector('#registerPassword').value })); } catch (error) { authError.textContent = error.message; } });
 authToggle.addEventListener('click', (event) => { if (event.target.dataset.authMode) switchAuth(event.target.dataset.authMode); });
-document.querySelector('#logoutButton').addEventListener('click', () => { sessionStorage.removeItem(SESSION_KEY); window.clearTeacherDashboard(); document.body.classList.remove('authenticated'); authScreen.scrollTop = 0; });
+document.querySelector('#logoutButton').addEventListener('click', () => { sessionStorage.removeItem(SESSION_KEY); window.clearTeacherDashboard(); document.body.classList.remove('authenticated'); window.loadPublicSummary?.(); authScreen.scrollTop = 0; });
+document.querySelector('#openTeacherLogin').addEventListener('click', () => { document.body.classList.add('auth-mode'); switchAuth('login'); loginForm.reset(); setTimeout(() => loginForm.reset(), 100); authScreen.scrollTop = 0; });
+document.querySelector('#backToPublic').addEventListener('click', () => { document.body.classList.remove('auth-mode'); });
 
 const existingSession = currentSession();
 if (existingSession?.token && existingSession?.teacher) activateSession(existingSession);
