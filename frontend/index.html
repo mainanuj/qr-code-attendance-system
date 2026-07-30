@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="modal.css" />
     <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="settings.css" />
   </head>
   <body>
     <section class="auth-screen" id="authScreen">
@@ -31,6 +32,7 @@
           <button class="nav-link" data-view="students"><span>♙</span> Students</button>
           <button class="nav-link" data-view="scanner"><span>⌁</span> Scan attendance</button>
           <button class="nav-link" data-view="records"><span>▤</span> Attendance log</button>
+          <button class="nav-link" data-view="settings"><span>◷</span> Class settings</button>
         </nav>
         <div class="sidebar-bottom">
           <div class="teacher-card"><span class="avatar" id="teacherAvatar">AS</span><div><strong id="teacherName">Alex Sharma</strong><small>Instructor</small></div></div>
@@ -76,6 +78,12 @@
           <div class="toolbar"><label class="field-label">Date<input type="date" id="recordDate" /></label><select id="recordYear"><option value="">All years</option></select><select id="recordSection"><option value="">All sections</option></select><select id="recordStatus"><option value="">All statuses</option><option value="Present">Present</option><option value="Late">Late</option></select><label class="search-box">⌕ <input id="recordSearch" placeholder="Search student" /></label></div>
           <section class="panel table-panel"><table><thead><tr><th>Student</th><th>Roll no.</th><th>Section</th><th>Date</th><th>Check-in time</th><th>Status</th></tr></thead><tbody id="recordRows"></tbody></table><div class="empty-state" id="recordsEmpty"><span>▤</span><h3>No attendance records</h3><p>Scan a student QR code to begin.</p></div></section>
         </section>
+
+        <section class="view" id="settings">
+          <div class="page-heading"><div><p class="eyebrow">TEACHER CONTROLS</p><h2>Class attendance timing</h2><p class="muted">Set a timing window for each of your classes. The server applies these rules when a QR is scanned.</p></div></div>
+          <section class="settings-info"><strong>How attendance is calculated</strong><span>Before start: rejected</span><span>Start to Present Until: Present</span><span>Present Until to End: Late</span><span>After end: rejected</span></section>
+          <div class="settings-list" id="classSettingsList"></div>
+        </section>
       </main>
     </div>
 
@@ -88,5 +96,6 @@
     <script src="scanner.js"></script>
     <script src="backend-client.js"></script>
     <script src="auth.js"></script>
+    <script src="settings.js"></script>
   </body>
 </html>

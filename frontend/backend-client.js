@@ -12,6 +12,7 @@ async function apiRequest(path, options = {}) {
   if (!response.ok) throw new Error(payload.error || 'The server could not complete that request.');
   return payload;
 }
+window.backendApiRequest = apiRequest;
 
 async function loadDatabaseState() {
   backendOnline = false;

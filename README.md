@@ -99,3 +99,14 @@ JWT_SECRET=use_a_long_random_private_value_here
 ```
 
 Do not upload `backend/.env` to GitHub.
+
+## Class attendance timing
+
+Each teacher configures attendance timing separately for every course in **Class settings**. The backend uses server time, never a status sent by the browser:
+
+- Before **Attendance Start**: scan is rejected
+- Start through **Present Until**: `Present`
+- Present Until through **Attendance End**: `Late`
+- After **Attendance End**: scan is rejected
+
+The server accepts settings only when `Start < Present Until < End`.

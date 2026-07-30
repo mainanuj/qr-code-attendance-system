@@ -26,10 +26,17 @@ const attendanceFields = `a.id, a.student_id AS studentId, DATE_FORMAT(a.attenda
 
 function makeToken() { return `ATD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
 function validText(value, limit) { return typeof value === 'string' && value.trim() && value.trim().length <= limit; }
-function currentStatus() {
-  const [hours, minutes] = (process.env.LATE_AFTER || '09:10').split(':').map(Number);
-  const now = new Date();
-  return now.getHours() > hours || (now.getHours() === hours && now.getMinutes() > minutes) ? 'Late' : 'Present';
+function isValidTime(value) { return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value); }
+function timeToSeconds(value) { const [hours, minutes, seconds = 0] = value.split(':').map(Number); return hours * 3600 + minutes * 60 + seconds; }
+function serverTime() { const now = new Date(); return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds(); }
+function calculateAttendanceStatus(setting) {
+  const now = serverTime();
+  const start = timeToSeconds(setting.startTime);
+  const presentUntil = timeToSeconds(setting.presentUntil);
+  const end = timeToSeconds(setting.endTime);
+  if (now < start) return { allowed: false, error: `Attendance has not started. It opens at ${setting.startTime.slice(0, 5)}.` };
+  if (now > end) return { allowed: false, error: `Attendance is closed. It ended at ${setting.endTime.slice(0, 5)}.` };
+  return { allowed: true, status: now <= presentUntil ? 'Present' : 'Late' };
 }
 
 function createSession(teacher) {
@@ -91,6 +98,42 @@ app.get('/api/auth/me', authenticate, (request, response) => response.json({ tea
 
 app.use('/api/students', authenticate);
 app.use('/api/attendance', authenticate);
+app.use('/api/classes', authenticate);
+
+app.get('/api/classes/attendance-settings', async (request, response, next) => {
+  try {
+    const [rows] = await pool.execute(`SELECT courses.course,
+      TIME_FORMAT(settings.start_time, '%H:%i') AS startTime,
+      TIME_FORMAT(settings.present_until, '%H:%i') AS presentUntil,
+      TIME_FORMAT(settings.end_time, '%H:%i') AS endTime
+      FROM (SELECT DISTINCT course FROM students WHERE teacher_id = ?) courses
+      LEFT JOIN class_attendance_settings settings
+        ON settings.teacher_id = ? AND settings.course = courses.course
+      ORDER BY courses.course`, [request.teacher.teacherId, request.teacher.teacherId]);
+    response.json(rows);
+  } catch (error) { next(error); }
+});
+
+app.put('/api/classes/attendance-settings', async (request, response, next) => {
+  const { course, startTime, presentUntil, endTime } = request.body || {};
+  if (!validText(course, 160) || !isValidTime(startTime) || !isValidTime(presentUntil) || !isValidTime(endTime)) {
+    response.status(400).json({ error: 'Course and all three valid times are required.' });
+    return;
+  }
+  if (!(timeToSeconds(startTime) < timeToSeconds(presentUntil) && timeToSeconds(presentUntil) < timeToSeconds(endTime))) {
+    response.status(400).json({ error: 'Start Time must be before Present Until, which must be before End Time.' });
+    return;
+  }
+  try {
+    const [courses] = await pool.execute('SELECT 1 FROM students WHERE teacher_id = ? AND course = ? LIMIT 1', [request.teacher.teacherId, course.trim()]);
+    if (!courses.length) { response.status(404).json({ error: 'This class does not belong to your dashboard.' }); return; }
+    await pool.execute(`INSERT INTO class_attendance_settings (id, teacher_id, course, start_time, present_until, end_time)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE start_time = VALUES(start_time), present_until = VALUES(present_until), end_time = VALUES(end_time)`,
+    [crypto.randomUUID(), request.teacher.teacherId, course.trim(), startTime, presentUntil, endTime]);
+    response.json({ course: course.trim(), startTime, presentUntil, endTime });
+  } catch (error) { next(error); }
+});
 
 app.get('/api/students', async (request, response, next) => {
   try {
@@ -171,7 +214,13 @@ app.post('/api/attendance/check-in', async (request, response, next) => {
     const [students] = await pool.execute(`SELECT ${studentFields} FROM students WHERE teacher_id = ? AND (qr_token = ? OR roll_number = ?) LIMIT 1`, [request.teacher.teacherId, code, code]);
     const student = students[0];
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
-    const record = { id: crypto.randomUUID(), studentId: student.id, status: currentStatus() };
+    const [settings] = await pool.execute(`SELECT TIME_FORMAT(start_time, '%H:%i:%s') AS startTime,
+      TIME_FORMAT(present_until, '%H:%i:%s') AS presentUntil, TIME_FORMAT(end_time, '%H:%i:%s') AS endTime
+      FROM class_attendance_settings WHERE teacher_id = ? AND course = ? LIMIT 1`, [request.teacher.teacherId, student.course]);
+    if (!settings.length) { response.status(409).json({ error: `Attendance timing is not configured for ${student.course}.` }); return; }
+    const timing = calculateAttendanceStatus(settings[0]);
+    if (!timing.allowed) { response.status(409).json({ error: timing.error }); return; }
+    const record = { id: crypto.randomUUID(), studentId: student.id, status: timing.status };
     await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, CURDATE(), CURTIME(), ?)', [record.id, record.studentId, record.status]);
     const [records] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a JOIN students s ON s.id = a.student_id WHERE a.id = ?`, [record.id]);
     Object.assign(record, records[0]);

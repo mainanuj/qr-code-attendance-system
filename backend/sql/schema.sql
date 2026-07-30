@@ -26,3 +26,14 @@ CREATE TABLE IF NOT EXISTS attendance (
   CONSTRAINT unique_daily_attendance UNIQUE (student_id, attendance_date),
   INDEX idx_attendance_date (attendance_date)
 );
+
+CREATE TABLE IF NOT EXISTS class_attendance_settings (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  teacher_id CHAR(36) NOT NULL,
+  course VARCHAR(160) NOT NULL,
+  start_time TIME NOT NULL,
+  present_until TIME NOT NULL,
+  end_time TIME NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_teacher_course (teacher_id, course)
+);

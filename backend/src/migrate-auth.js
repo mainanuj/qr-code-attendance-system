@@ -22,7 +22,18 @@ try {
     await pool.execute("ALTER TABLE students ADD COLUMN section VARCHAR(20) NOT NULL DEFAULT 'General' AFTER course");
   }
 
-  console.log('Teacher authentication and section migration completed.');
+  await pool.execute(`CREATE TABLE IF NOT EXISTS class_attendance_settings (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    teacher_id CHAR(36) NOT NULL,
+    course VARCHAR(160) NOT NULL,
+    start_time TIME NOT NULL,
+    present_until TIME NOT NULL,
+    end_time TIME NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_teacher_course (teacher_id, course)
+  )`);
+
+  console.log('Teacher, section, and attendance timing migration completed.');
 } catch (error) {
   console.error('Migration failed:', error.message);
   process.exitCode = 1;
