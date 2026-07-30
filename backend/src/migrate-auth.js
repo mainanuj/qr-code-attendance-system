@@ -16,7 +16,13 @@ try {
     await pool.execute('CREATE INDEX idx_students_teacher ON students (teacher_id)');
   }
 
-  console.log('Teacher authentication migration completed.');
+  const [sectionColumns] = await pool.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'section'`);
+  if (!sectionColumns.length) {
+    await pool.execute("ALTER TABLE students ADD COLUMN section VARCHAR(20) NOT NULL DEFAULT 'General' AFTER course");
+  }
+
+  console.log('Teacher authentication and section migration completed.');
 } catch (error) {
   console.error('Migration failed:', error.message);
   process.exitCode = 1;

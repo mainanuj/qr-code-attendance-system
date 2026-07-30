@@ -54,9 +54,10 @@ document.querySelector('#studentForm').addEventListener('submit', async (event) 
   const name = document.querySelector('#studentName').value.trim();
   const roll = document.querySelector('#studentRoll').value.trim();
   const course = document.querySelector('#studentCourse').value.trim();
-  if (!name || !roll || !course) return;
+  const section = document.querySelector('#studentSection').value.trim();
+  if (!name || !roll || !course || !section) return;
   try {
-    const student = await apiRequest('/students', { method: 'POST', body: JSON.stringify({ name, roll, course }) });
+    const student = await apiRequest('/students', { method: 'POST', body: JSON.stringify({ name, roll, course, section }) });
     ui.state.students.push(student);
     ui.refresh();
     document.querySelector('#studentModal').close();

@@ -20,9 +20,9 @@ const frontendPath = path.resolve(__dirname, '../../frontend');
 app.use(cors());
 app.use(express.json());
 
-const studentFields = 'id, name, roll_number AS roll, course, qr_token AS token, created_at AS createdAt';
+const studentFields = 'id, name, roll_number AS roll, course, section, qr_token AS token, created_at AS createdAt';
 const attendanceFields = `a.id, a.student_id AS studentId, DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS date,
-  TIME_FORMAT(a.check_in_time, '%h:%i %p') AS time, a.status, UNIX_TIMESTAMP(a.created_at) * 1000 AS createdAt`;
+  TIME_FORMAT(a.check_in_time, '%h:%i %p') AS time, a.status, s.section AS section, UNIX_TIMESTAMP(a.created_at) * 1000 AS createdAt`;
 
 function makeToken() { return `ATD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
 function validText(value, limit) { return typeof value === 'string' && value.trim() && value.trim().length <= limit; }
@@ -96,24 +96,26 @@ app.get('/api/students', async (request, response, next) => {
   try {
     const query = String(request.query.q || '').trim();
     const course = String(request.query.course || '').trim();
+    const section = String(request.query.section || '').trim();
     const [rows] = await pool.query(`SELECT ${studentFields} FROM students
       WHERE teacher_id = :teacherId
         AND (:query = '' OR name LIKE CONCAT('%', :query, '%') OR roll_number LIKE CONCAT('%', :query, '%'))
         AND (:course = '' OR course = :course)
-      ORDER BY name`, { query, course, teacherId: request.teacher.teacherId });
+        AND (:section = '' OR section = :section)
+      ORDER BY name`, { query, course, section, teacherId: request.teacher.teacherId });
     response.json(rows);
   } catch (error) { next(error); }
 });
 
 app.post('/api/students', async (request, response, next) => {
-  const { name, roll, course } = request.body || {};
-  if (!validText(name, 120) || !validText(roll, 60) || !validText(course, 160)) {
-    response.status(400).json({ error: 'Name, roll number, and course are required.' });
+  const { name, roll, course, section } = request.body || {};
+  if (!validText(name, 120) || !validText(roll, 60) || !validText(course, 160) || !validText(section, 20)) {
+    response.status(400).json({ error: 'Name, roll number, course, and section are required.' });
     return;
   }
-  const student = { id: crypto.randomUUID(), name: name.trim(), roll: roll.trim(), course: course.trim(), token: makeToken() };
+  const student = { id: crypto.randomUUID(), name: name.trim(), roll: roll.trim(), course: course.trim(), section: section.trim(), token: makeToken() };
   try {
-    await pool.execute('INSERT INTO students (id, teacher_id, name, roll_number, course, qr_token) VALUES (?, ?, ?, ?, ?, ?)', [student.id, request.teacher.teacherId, student.name, student.roll, student.course, student.token]);
+    await pool.execute('INSERT INTO students (id, teacher_id, name, roll_number, course, section, qr_token) VALUES (?, ?, ?, ?, ?, ?, ?)', [student.id, request.teacher.teacherId, student.name, student.roll, student.course, student.section, student.token]);
     response.status(201).json(student);
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') { response.status(409).json({ error: 'This roll number already exists.' }); return; }
@@ -171,7 +173,7 @@ app.post('/api/attendance/check-in', async (request, response, next) => {
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
     const record = { id: crypto.randomUUID(), studentId: student.id, status: currentStatus() };
     await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, CURDATE(), CURTIME(), ?)', [record.id, record.studentId, record.status]);
-    const [records] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a WHERE a.id = ?`, [record.id]);
+    const [records] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a JOIN students s ON s.id = a.student_id WHERE a.id = ?`, [record.id]);
     Object.assign(record, records[0]);
     response.status(201).json({ record, student });
   } catch (error) {
