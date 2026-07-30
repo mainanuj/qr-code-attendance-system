@@ -1,0 +1,101 @@
+/* A dedicated final layer keeps the add-student dialog readable at any zoom. */
+#studentModal {
+  width: min(540px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+}
+
+#studentModal form { padding: 30px; }
+
+.form-intro {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 13px 0 20px;
+}
+
+.form-grid label { display: block; }
+
+.form-grid input {
+  width: 100%;
+  min-height: 42px;
+  background: #fbfcfe;
+  border: 1px solid #dfe5ee;
+  padding: 12px 13px;
+}
+
+.form-grid input:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px #5362e81a;
+}
+
+.form-error {
+  min-height: 18px;
+  color: #c85050;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 12px 0 0;
+}
+
+.form-error:not(:empty) {
+  padding: 9px 11px;
+  background: #fff1f1;
+  border-radius: 7px;
+}
+
+.modal-actions { margin-top: 17px; }
+
+/* QR cards must never grow beyond their modal, regardless of browser zoom. */
+#qrModal {
+  width: min(420px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+}
+
+#qrModal .qr-modal-content {
+  position: relative;
+  padding: 30px;
+  text-align: center;
+}
+
+#qrModal .qr-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+#qrModal .qr-modal-content .eyebrow { margin-top: 3px; }
+
+#qrModal .qr-modal-content h2 {
+  margin: 0 28px 6px;
+  font-size: 20px;
+}
+
+#qrModal .qr-image-wrap {
+  box-sizing: border-box;
+  display: block;
+  overflow: hidden;
+  width: 184px !important;
+  height: 184px !important;
+  max-width: 184px !important;
+  max-height: 184px !important;
+  margin: 20px auto 12px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e7ebf1;
+  border-radius: 9px;
+}
+
+#qrModal .qr-image-wrap img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain;
+}
+
+#qrModal #qrToken {
+  display: block;
+  margin: 0 0 18px;
+  font: 10px "DM Mono", monospace;
+  color: #788496;
+}
