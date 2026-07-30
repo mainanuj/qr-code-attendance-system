@@ -65,6 +65,7 @@ Node.js and MySQL are already installed on this laptop. MySQL needs its root pas
 
    ```powershell
    cd .\backend
+   npm.cmd run migrate
    npm.cmd start
    ```
 
