@@ -13,6 +13,7 @@ function activateSession(session) {
   document.body.classList.add('authenticated');
   document.querySelector('#teacherName').textContent = session.teacher.name;
   document.querySelector('#teacherAvatar').textContent = initialsFromName(session.teacher.name);
+  document.querySelector('#pageTitle').textContent = `Good morning, ${session.teacher.name} ✦`;
   window.clearTeacherDashboard();
   window.loadDatabaseState();
 }
