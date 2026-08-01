@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="soft-3d.css" />
     <link rel="stylesheet" href="modal-glass.css" />
     <link rel="stylesheet" href="qr-modal-glass.css" />
+    <link rel="stylesheet" href="auth-glass.css" />
   </head>
   <body>
     <section class="public-landing" id="publicLanding">
@@ -41,8 +42,8 @@
       <div class="auth-panel">
         <a class="brand auth-brand" href="#"><span class="brand-mark">A</span><span>attendly</span></a>
         <div class="auth-copy"><p class="eyebrow">QR ATTENDANCE SYSTEM</p><h1 id="authTitle">Welcome back</h1><p id="authSubtitle">Log in to access your private teacher dashboard.</p></div>
-        <form id="loginForm" class="auth-form"><label>Username<input id="loginUsername" autocomplete="username" placeholder="e.g. anuj_teacher" required /></label><label>Password<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required /></label><button class="primary-btn wide" type="submit">Log in <span>→</span></button></form>
-        <form id="registerForm" class="auth-form hidden"><label>Full name<input id="registerName" autocomplete="name" placeholder="e.g. Anuj Kumar" required /></label><label>Username<input id="registerUsername" autocomplete="username" placeholder="e.g. anuj_teacher" required /></label><label>Email<input id="registerEmail" type="email" autocomplete="email" placeholder="teacher@college.edu" required /></label><label>Password<input id="registerPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters" required /></label><button class="primary-btn wide" type="submit">Create teacher account <span>→</span></button></form>
+        <form id="loginForm" class="auth-form"><label>Username<input id="loginUsername" autocomplete="username" required /></label><label>Password<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required /></label><button class="primary-btn wide" type="submit">Log in <span>→</span></button></form>
+        <form id="registerForm" class="auth-form hidden"><label>Full name<input id="registerName" autocomplete="name" required /></label><label>Username<input id="registerUsername" autocomplete="username" required /></label><label>Email<input id="registerEmail" type="email" autocomplete="email" placeholder="teacher@college.edu" required /></label><label>Password<input id="registerPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters" required /></label><button class="primary-btn wide" type="submit">Create teacher account <span>→</span></button></form>
         <p class="auth-error" id="authError" role="alert"></p><p class="auth-toggle" id="authToggle">New teacher? <button type="button" data-auth-mode="register">Create an account</button></p><button class="auth-back" id="backToPublic" type="button">Back to public QR scanner</button>
       </div>
       <div class="auth-art"><div class="auth-orbit orbit-a"></div><div class="auth-orbit orbit-b"></div><div class="auth-qr">⌁</div><p>Your students. Your records.<br /><strong>One secure dashboard.</strong></p></div>
