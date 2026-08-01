@@ -37,3 +37,12 @@ CREATE TABLE IF NOT EXISTS class_attendance_settings (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY unique_teacher_course (teacher_id, course)
 );
+
+CREATE TABLE IF NOT EXISTS teacher_dashboard_settings (
+  teacher_id CHAR(36) NOT NULL PRIMARY KEY,
+  course_label VARCHAR(160) NOT NULL,
+  session_label VARCHAR(80) NOT NULL,
+  year_label VARCHAR(80) NOT NULL,
+  semester_label VARCHAR(80) NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

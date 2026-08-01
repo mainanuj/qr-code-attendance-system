@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="import-dialog.css" />
     <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="settings.css" />
+    <link rel="stylesheet" href="dashboard-session.css" />
     <link rel="stylesheet" href="attendance.css" />
     <link rel="stylesheet" href="admin-modern.css" />
     <link rel="stylesheet" href="responsive.css" />
@@ -70,7 +71,7 @@
 
         <section class="view active" id="dashboard">
           <div class="hero-grid">
-            <article class="welcome-card"><div><p class="eyebrow">CURRENT SESSION</p><h2>BCA 2026-27<br /></h2><p class="muted">THIRD YEAR · Semester 5</p><div class="session-meta"><span><b class="dot"></b> Live now</span><span></span></div></div><div class="orbital"><span class="orb one"></span><span class="orb two"></span><span class="orb three"></span><span class="scan-glyph">⌁</span></div></article>
+            <article class="welcome-card"><div><p class="eyebrow">CURRENT SESSION</p><h2 id="dashboardSessionTitle">BCA 2026-27</h2><p class="muted" id="dashboardSessionMeta">THIRD YEAR · Semester 5</p><div class="session-meta"><span><b class="dot"></b> Live now</span><span></span></div></div><div class="orbital"><span class="orb one"></span><span class="orb two"></span><span class="orb three"></span><span class="scan-glyph">⌁</span></div></article>
             <article class="quick-card"><div class="quick-head"><span class="icon-tile">◎</span><span class="pill">Today</span></div><strong id="attendancePercent">0%</strong><p>attendance rate</p><div class="progress"><span id="attendanceProgress"></span></div><small id="presentSummary">0 of 0 students checked in</small></article>
           </div>
           <div class="stat-grid">
@@ -102,7 +103,8 @@
         </section>
 
         <section class="view" id="settings">
-          <div class="page-heading"><div><p class="eyebrow">TEACHER CONTROLS</p><h2>Class attendance timing</h2><p class="muted">Set a timing window for each of your classes. The server applies these rules when a QR is scanned.</p></div></div>
+          <div class="page-heading"><div><p class="eyebrow">TEACHER CONTROLS</p><h2>Class settings</h2><p class="muted">Manage dashboard session information and attendance timing rules for your classes.</p></div></div>
+          <section class="dashboard-session-card"><div><p class="eyebrow">MAIN DASHBOARD</p><h3>Session information</h3><p>Choose the course, academic session, year, and semester shown in your dashboard session card.</p></div><form id="dashboardSettingsForm" class="dashboard-session-form"><label>Course<input id="dashboardCourseLabel" maxlength="160" required placeholder="e.g. BCA" /></label><label>Academic session<input id="dashboardSessionLabel" maxlength="80" required placeholder="e.g. 2026-27" /></label><label>Year<input id="dashboardYearLabel" maxlength="80" required placeholder="e.g. Third Year" /></label><label>Semester<input id="dashboardSemesterLabel" maxlength="80" required placeholder="e.g. Semester 5" /></label><button class="primary-btn" type="submit">Save session</button></form></section>
           <section class="settings-info"><strong>How attendance is calculated</strong><span>Before start: rejected</span><span>Start to Present Until: Present</span><span>Present Until to End: Late</span><span>After end: rejected</span></section>
           <div class="settings-list" id="classSettingsList"></div>
         </section>

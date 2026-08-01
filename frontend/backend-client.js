@@ -16,15 +16,24 @@ async function apiRequest(path, options = {}) {
 }
 window.backendApiRequest = apiRequest;
 
+function updateDashboardSession(settings) {
+  const title = [settings.courseLabel, settings.sessionLabel].filter(Boolean).join(' ');
+  const meta = [settings.yearLabel, settings.semesterLabel].filter(Boolean).join(' · ');
+  document.querySelector('#dashboardSessionTitle').textContent = title || 'Current session';
+  document.querySelector('#dashboardSessionMeta').textContent = meta || 'Set your session details in Class settings';
+}
+window.updateDashboardSession = updateDashboardSession;
+
 async function loadDatabaseState() {
   backendOnline = false;
   try {
     const health = await apiRequest('/health');
     if (!health.ok) return;
     const selectedDate = document.querySelector('#recordDate').value;
-    const [students, attendance] = await Promise.all([apiRequest('/students'), apiRequest(`/attendance${selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''}`)]);
+    const [students, attendance, dashboardSession] = await Promise.all([apiRequest('/students'), apiRequest(`/attendance${selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''}`), apiRequest('/classes/dashboard-settings')]);
     backendOnline = true;
     ui.setDatabaseState(students, attendance);
+    updateDashboardSession(dashboardSession);
     ui.toast('Connected to the MySQL attendance database.');
   } catch (error) {
     console.error('Could not load MySQL data:', error);

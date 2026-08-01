@@ -156,6 +156,33 @@ app.use('/api/students', authenticate);
 app.use('/api/attendance', authenticate);
 app.use('/api/classes', authenticate);
 
+app.get('/api/classes/dashboard-settings', async (request, response, next) => {
+  try {
+    const [[settings]] = await pool.execute(`SELECT course_label AS courseLabel, session_label AS sessionLabel,
+      year_label AS yearLabel, semester_label AS semesterLabel
+      FROM teacher_dashboard_settings WHERE teacher_id = ? LIMIT 1`, [request.teacher.teacherId]);
+    if (settings) { response.json(settings); return; }
+    const [[firstCourse]] = await pool.execute('SELECT course FROM students WHERE teacher_id = ? ORDER BY created_at LIMIT 1', [request.teacher.teacherId]);
+    response.json({ courseLabel: firstCourse?.course || 'Course', sessionLabel: '2026-27', yearLabel: 'Third Year', semesterLabel: 'Semester 5' });
+  } catch (error) { next(error); }
+});
+
+app.put('/api/classes/dashboard-settings', async (request, response, next) => {
+  const { courseLabel, sessionLabel, yearLabel, semesterLabel } = request.body || {};
+  if (!validText(courseLabel, 160) || !validText(sessionLabel, 80) || !validText(yearLabel, 80) || !validText(semesterLabel, 80)) {
+    response.status(400).json({ error: 'Course, session, year, and semester are all required.' });
+    return;
+  }
+  try {
+    await pool.execute(`INSERT INTO teacher_dashboard_settings (teacher_id, course_label, session_label, year_label, semester_label)
+      VALUES (?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE course_label = VALUES(course_label), session_label = VALUES(session_label),
+        year_label = VALUES(year_label), semester_label = VALUES(semester_label)`,
+    [request.teacher.teacherId, courseLabel.trim(), sessionLabel.trim(), yearLabel.trim(), semesterLabel.trim()]);
+    response.json({ courseLabel: courseLabel.trim(), sessionLabel: sessionLabel.trim(), yearLabel: yearLabel.trim(), semesterLabel: semesterLabel.trim() });
+  } catch (error) { next(error); }
+});
+
 app.get('/api/classes/attendance-settings', async (request, response, next) => {
   try {
     const [rows] = await pool.execute(`SELECT courses.course,

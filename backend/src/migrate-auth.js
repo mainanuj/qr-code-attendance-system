@@ -53,7 +53,16 @@ try {
     UNIQUE KEY unique_teacher_course (teacher_id, course)
   )`);
 
-  console.log('Teacher username, section, and attendance timing migration completed.');
+  await pool.execute(`CREATE TABLE IF NOT EXISTS teacher_dashboard_settings (
+    teacher_id CHAR(36) NOT NULL PRIMARY KEY,
+    course_label VARCHAR(160) NOT NULL,
+    session_label VARCHAR(80) NOT NULL,
+    year_label VARCHAR(80) NOT NULL,
+    semester_label VARCHAR(80) NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`);
+
+  console.log('Teacher username, dashboard session, section, and attendance timing migration completed.');
 } catch (error) {
   console.error('Migration failed:', error.message);
   process.exitCode = 1;
