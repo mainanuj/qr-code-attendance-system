@@ -83,7 +83,7 @@ For automatic restart while developing, use `npm.cmd run dev` instead.
 
 ## Teacher login and separate dashboards
 
-Teacher login is included. Each teacher registers with a name, email, and password; after login, they can see only their own students and attendance records. The first teacher account created automatically receives the existing student data. Every teacher created after that starts with a private empty roster.
+Teacher login is included. Each teacher registers with a name, unique username, email, and password; login uses the username and password. After login, teachers can see only their own students and attendance records. The first teacher account created automatically receives the existing student data. Every teacher created after that starts with a private empty roster.
 
 After updating the project, run this migration once:
 
@@ -110,3 +110,13 @@ Each teacher configures attendance timing separately for every course in **Class
 - After **Attendance End**: scan is rejected
 
 The server accepts settings only when `Start < Present Until < End`.
+
+## Bulk student import
+
+On the **Students** page, use **Import students** to upload a `.csv` or `.xlsx` file (maximum 5 MB). The import maps columns by header name, so their order does not matter. The required headers are:
+
+```text
+Roll Number, Name, Course, Section
+```
+
+The import creates normal student records with QR tokens, skips duplicate roll numbers, validates missing fields, and displays Imported, Duplicates, and Errors counts after completion.

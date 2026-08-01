@@ -10,10 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="modal.css" />
+    <link rel="stylesheet" href="import.css" />
+    <link rel="stylesheet" href="import-dialog.css" />
     <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="settings.css" />
     <link rel="stylesheet" href="attendance.css" />
     <link rel="stylesheet" href="admin-modern.css" />
+    <link rel="stylesheet" href="responsive.css" />
     <link rel="stylesheet" href="public.css" />
   </head>
   <body>
@@ -33,8 +36,8 @@
       <div class="auth-panel">
         <a class="brand auth-brand" href="#"><span class="brand-mark">A</span><span>attendly</span></a>
         <div class="auth-copy"><p class="eyebrow">QR ATTENDANCE SYSTEM</p><h1 id="authTitle">Welcome back</h1><p id="authSubtitle">Log in to access your private teacher dashboard.</p></div>
-        <form id="loginForm" class="auth-form"><label>Email<input id="loginEmail" type="email" autocomplete="email" placeholder="teacher@college.edu" required /></label><label>Password<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required /></label><button class="primary-btn wide" type="submit">Log in <span>→</span></button></form>
-        <form id="registerForm" class="auth-form hidden"><label>Full name<input id="registerName" autocomplete="name" placeholder="e.g. Alex Sharma" required /></label><label>Email<input id="registerEmail" type="email" autocomplete="email" placeholder="teacher@college.edu" required /></label><label>Password<input id="registerPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters" required /></label><button class="primary-btn wide" type="submit">Create teacher account <span>→</span></button></form>
+        <form id="loginForm" class="auth-form"><label>Username<input id="loginUsername" autocomplete="username" placeholder="e.g. anuj_teacher" required /></label><label>Password<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required /></label><button class="primary-btn wide" type="submit">Log in <span>→</span></button></form>
+        <form id="registerForm" class="auth-form hidden"><label>Full name<input id="registerName" autocomplete="name" placeholder="e.g. Anuj Kumar" required /></label><label>Username<input id="registerUsername" autocomplete="username" placeholder="e.g. anuj_teacher" required /></label><label>Email<input id="registerEmail" type="email" autocomplete="email" placeholder="teacher@college.edu" required /></label><label>Password<input id="registerPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters" required /></label><button class="primary-btn wide" type="submit">Create teacher account <span>→</span></button></form>
         <p class="auth-error" id="authError" role="alert"></p><p class="auth-toggle" id="authToggle">New teacher? <button type="button" data-auth-mode="register">Create an account</button></p><button class="auth-back" id="backToPublic" type="button">Back to public QR scanner</button>
       </div>
       <div class="auth-art"><div class="auth-orbit orbit-a"></div><div class="auth-orbit orbit-b"></div><div class="auth-qr">⌁</div><p>Your students. Your records.<br /><strong>One secure dashboard.</strong></p></div>
@@ -78,7 +81,7 @@
         </section>
 
         <section class="view" id="students">
-          <div class="page-heading"><div><p class="eyebrow">ROSTER</p><h2>Students</h2><p class="muted">Add students and issue an individual, secure QR code.</p></div><button class="primary-btn" id="openStudentModal">+ Add student</button></div>
+          <div class="page-heading"><div><p class="eyebrow"></p><h2></h2><p class="muted">Add students and issue an individual, secure QR code.</p></div><div class="student-page-actions"><button class="outline-btn" id="openImportModal" type="button">Import students</button><button class="primary-btn" id="openStudentModal">+ Add student</button></div></div>
           <div class="toolbar"><label class="search-box">⌕ <input id="studentSearch" placeholder="Search by name or roll number" /></label><select id="courseFilter"><option value="">All courses</option></select><select id="sectionFilter"><option value="">All sections</option></select><button class="outline-btn" id="printAll">▣ Print all cards</button></div>
           <section class="panel table-panel"><table><thead><tr><th>Student</th><th>Roll no.</th><th>Course</th><th>Section</th><th>QR status</th><th></th></tr></thead><tbody id="studentRows"></tbody></table><div class="empty-state" id="studentsEmpty"><span>♙</span><h3>No students yet</h3><p>Add your first student to generate a QR card.</p></div></section>
         </section>
@@ -102,7 +105,8 @@
       </main>
     </div>
 
-    <dialog id="studentModal"><form id="studentForm" novalidate><div class="modal-heading"><div><p class="eyebrow">NEW ROSTER ENTRY</p><h2>Add student</h2></div><button class="close-btn" type="button" data-close-student>×</button></div><p class="form-intro">Enter the student's details to issue their unique QR attendance card.</p><div class="form-grid"><label>Full name<input id="studentName" placeholder="e.g. Riya Patel" /></label><label>Roll number<input id="studentRoll" placeholder="e.g. CS24-018" /></label><label>Course<input id="studentCourse" placeholder="e.g. BCA" /></label><label>Section<input id="studentSection" maxlength="20" placeholder="e.g. A, B, C or D" /></label></div><p class="form-error" id="studentFormError" role="alert"></p><div class="modal-actions"><button class="outline-btn" type="button" data-close-student>Cancel</button><button class="primary-btn" type="submit">Create QR card</button></div></form></dialog>
+    <dialog id="studentModal"><form id="studentForm" novalidate><div class="modal-heading"><div><p class="eyebrow" id="studentModalEyebrow">NEW ROSTER ENTRY</p><h2 id="studentModalTitle">Add student</h2></div><button class="close-btn" type="button" data-close-student>×</button></div><p class="form-intro" id="studentModalIntro">Enter the student's details to issue their unique QR attendance card.</p><div class="form-grid"><label>Full name<input id="studentName" placeholder="e.g. Riya Patel" /></label><label>Roll number<input id="studentRoll" placeholder="e.g. CS24-018" /></label><label>Course<input id="studentCourse" placeholder="e.g. BCA" /></label><label>Section<input id="studentSection" maxlength="20" placeholder="e.g. A, B, C or D" /></label></div><p class="form-error" id="studentFormError" role="alert"></p><div class="modal-actions"><button class="outline-btn" type="button" data-close-student>Cancel</button><button class="primary-btn" id="studentSubmitButton" type="submit">Create QR card</button></div></form></dialog>
+    <dialog id="importModal"><form id="importStudentsForm"><div class="modal-heading"><div><p class="eyebrow">BULK ROSTER IMPORT</p><h2>Import students</h2></div><button class="close-btn" type="button" data-close-import>×</button></div><p class="form-intro">Upload a CSV or Excel file. Columns can be in any order.</p><div class="import-guide"><strong>Required column headers</strong><span>Roll Number</span><span>Name</span><span>Course</span><span>Section</span></div><label class="import-file-label">Choose CSV or Excel file<input id="studentImportFile" name="file" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /></label><p class="import-file-name" id="importFileName">No file selected</p><div class="import-summary" id="importSummary" aria-live="polite"></div><div class="modal-actions"><button class="outline-btn" type="button" data-close-import>Cancel</button><button class="primary-btn" id="importSubmitButton" type="submit">Import students</button></div></form></dialog>
     <dialog id="qrModal"><div class="qr-modal-content"><button class="close-btn qr-close">×</button><p class="eyebrow">STUDENT ACCESS CARD</p><h2 id="qrName"></h2><p id="qrDetails" class="muted"></p><div class="qr-image-wrap"><img id="qrImage" alt="Student QR code" /></div><code id="qrToken"></code><button class="primary-btn wide" id="printCard">▣ Print QR card</button></div></dialog>
     <div id="toast" class="toast" role="status"></div>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>

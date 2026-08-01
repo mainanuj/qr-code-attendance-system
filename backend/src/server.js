@@ -6,6 +6,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import * as XLSX from 'xlsx';
 import { pool, verifyDatabase } from './db.js';
 
 dotenv.config();
@@ -16,6 +18,7 @@ const jwtSecret = process.env.JWT_SECRET || 'local-development-secret-change-bef
 if (!process.env.JWT_SECRET) console.warn('JWT_SECRET is not set. Add one to backend/.env before deployment.');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendPath = path.resolve(__dirname, '../../frontend');
+const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 app.use(cors());
 app.use(express.json());
@@ -26,6 +29,7 @@ const attendanceFields = `a.id, a.student_id AS studentId, DATE_FORMAT(a.attenda
 
 function makeToken() { return `ATD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
 function validText(value, limit) { return typeof value === 'string' && value.trim() && value.trim().length <= limit; }
+function validUsername(value) { return typeof value === 'string' && /^[a-z0-9_.-]{3,40}$/i.test(value.trim()); }
 function isValidTime(value) { return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value); }
 function timeToSeconds(value) { const [hours, minutes, seconds = 0] = value.split(':').map(Number); return hours * 3600 + minutes * 60 + seconds; }
 function serverTime() { const now = new Date(); return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds(); }
@@ -39,8 +43,11 @@ function calculateAttendanceStatus(setting) {
   return { allowed: true, status: now <= presentUntil ? 'Present' : 'Late' };
 }
 
+function normalizedHeader(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function findHeader(headers, names) { return headers.find((header) => names.includes(normalizedHeader(header))); }
+
 function createSession(teacher) {
-  return jwt.sign({ teacherId: teacher.id, name: teacher.name, email: teacher.email }, jwtSecret, { expiresIn: '8h' });
+  return jwt.sign({ teacherId: teacher.id, name: teacher.name, username: teacher.username, email: teacher.email }, jwtSecret, { expiresIn: '8h' });
 }
 
 function authenticate(request, response, next) {
@@ -101,22 +108,26 @@ app.post('/api/public/check-in', async (request, response, next) => {
 });
 
 app.post('/api/auth/register', async (request, response, next) => {
-  const { name, email, password } = request.body || {};
+  const { name, username, email, password } = request.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  if (!validText(name, 120) || !/^\S+@\S+\.\S+$/.test(normalizedEmail) || typeof password !== 'string' || password.length < 6) {
-    response.status(400).json({ error: 'Enter a name, valid email, and password of at least 6 characters.' });
+  const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
+  if (!validText(name, 120) || !validUsername(normalizedUsername) || !/^\S+@\S+\.\S+$/.test(normalizedEmail) || typeof password !== 'string' || password.length < 6) {
+    response.status(400).json({ error: 'Enter a name, unique username (3-40 letters, numbers, ., _, -), valid email, and password of at least 6 characters.' });
     return;
   }
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const [existing] = await connection.execute('SELECT id FROM teachers WHERE email = ? LIMIT 1', [normalizedEmail]);
-    if (existing.length) { await connection.rollback(); response.status(409).json({ error: 'A teacher already uses this email.' }); return; }
+    const [existing] = await connection.execute('SELECT id FROM teachers WHERE email = ? OR username = ? LIMIT 1', [normalizedEmail, normalizedUsername]);
+    if (existing.length) { await connection.rollback(); response.status(409).json({ error: 'This email or username is already in use.' }); return; }
     const [teacherCount] = await connection.query('SELECT COUNT(*) AS count FROM teachers');
-    const teacher = { id: crypto.randomUUID(), name: name.trim(), email: normalizedEmail };
+    const teacher = { id: crypto.randomUUID(), name: name.trim(), username: normalizedUsername, email: normalizedEmail };
     const passwordHash = await bcrypt.hash(password, 12);
-    await connection.execute('INSERT INTO teachers (id, name, email, password_hash) VALUES (?, ?, ?, ?)', [teacher.id, teacher.name, teacher.email, passwordHash]);
-    if (teacherCount[0].count === 0) await connection.execute('UPDATE students SET teacher_id = ? WHERE teacher_id IS NULL', [teacher.id]);
+    await connection.execute('INSERT INTO teachers (id, name, username, email, password_hash) VALUES (?, ?, ?, ?, ?)', [teacher.id, teacher.name, teacher.username, teacher.email, passwordHash]);
+    if (teacherCount[0].count === 0) await connection.execute(`UPDATE students s
+      LEFT JOIN teachers previous_teacher ON previous_teacher.id = s.teacher_id
+      SET s.teacher_id = ?
+      WHERE s.teacher_id IS NULL OR previous_teacher.id IS NULL`, [teacher.id]);
     await connection.commit();
     response.status(201).json({ teacher, token: createSession(teacher) });
   } catch (error) {
@@ -126,16 +137,16 @@ app.post('/api/auth/register', async (request, response, next) => {
 });
 
 app.post('/api/auth/login', async (request, response, next) => {
-  const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
+  const username = typeof request.body?.username === 'string' ? request.body.username.trim().toLowerCase() : '';
   const password = request.body?.password;
   try {
-    const [rows] = await pool.execute('SELECT id, name, email, password_hash FROM teachers WHERE email = ? LIMIT 1', [email]);
+    const [rows] = await pool.execute('SELECT id, name, username, email, password_hash FROM teachers WHERE username = ? LIMIT 1', [username]);
     const teacher = rows[0];
     if (!teacher || typeof password !== 'string' || !(await bcrypt.compare(password, teacher.password_hash))) {
       response.status(401).json({ error: 'Incorrect email or password.' });
       return;
     }
-    response.json({ teacher: { id: teacher.id, name: teacher.name, email: teacher.email }, token: createSession(teacher) });
+    response.json({ teacher: { id: teacher.id, name: teacher.name, username: teacher.username, email: teacher.email }, token: createSession(teacher) });
   } catch (error) { next(error); }
 });
 
@@ -205,6 +216,95 @@ app.post('/api/students', async (request, response, next) => {
   try {
     await pool.execute('INSERT INTO students (id, teacher_id, name, roll_number, course, section, qr_token) VALUES (?, ?, ?, ?, ?, ?, ?)', [student.id, request.teacher.teacherId, student.name, student.roll, student.course, student.section, student.token]);
     response.status(201).json(student);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') { response.status(409).json({ error: 'This roll number already exists.' }); return; }
+    next(error);
+  }
+});
+
+app.post('/api/students/import', importUpload.single('file'), async (request, response, next) => {
+  const file = request.file;
+  if (!file) { response.status(400).json({ error: 'Choose a CSV or Excel (.xlsx) file first.' }); return; }
+  const extension = path.extname(file.originalname || '').toLowerCase();
+  if (!['.csv', '.xlsx'].includes(extension)) { response.status(400).json({ error: 'Only CSV and Excel (.xlsx) files are supported.' }); return; }
+  try {
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+    if (!rows.length) { response.status(400).json({ error: 'The selected file has no student rows.' }); return; }
+    const headers = Object.keys(rows[0]);
+    const columnMap = {
+      roll: findHeader(headers, ['rollnumber', 'rollno', 'roll']),
+      name: findHeader(headers, ['name', 'studentname']),
+      course: findHeader(headers, ['course', 'class', 'program']),
+      section: findHeader(headers, ['section', 'sec'])
+    };
+    const missingColumns = Object.entries(columnMap).filter(([, header]) => !header).map(([field]) => ({ roll: 'Roll Number', name: 'Name', course: 'Course', section: 'Section' }[field]));
+    if (missingColumns.length) { response.status(400).json({ error: `Missing required column header(s): ${missingColumns.join(', ')}.` }); return; }
+
+    const preparedRows = rows.map((row, index) => ({
+      rowNumber: index + 2,
+      name: String(row[columnMap.name] || '').trim(),
+      roll: String(row[columnMap.roll] || '').trim(),
+      course: String(row[columnMap.course] || '').trim(),
+      section: String(row[columnMap.section] || '').trim()
+    })).filter((row) => row.name || row.roll || row.course || row.section);
+    if (!preparedRows.length) { response.status(400).json({ error: 'The selected file has no student rows.' }); return; }
+
+    const rolls = [...new Set(preparedRows.map((row) => row.roll).filter(Boolean))];
+    const existingRolls = new Set();
+    if (rolls.length) {
+      const placeholders = rolls.map(() => '?').join(', ');
+      const [existingStudents] = await pool.execute(`SELECT roll_number FROM students WHERE roll_number IN (${placeholders})`, rolls);
+      existingStudents.forEach((student) => existingRolls.add(String(student.roll_number).toLowerCase()));
+    }
+
+    const summary = { imported: 0, duplicates: 0, errors: 0, messages: [] };
+    const seenRolls = new Set();
+    for (const row of preparedRows) {
+      if (!validText(row.name, 120) || !validText(row.roll, 60) || !validText(row.course, 160) || !validText(row.section, 20)) {
+        summary.errors += 1;
+        if (summary.messages.length < 10) summary.messages.push(`Row ${row.rowNumber}: Name, Roll Number, Course, and Section are required.`);
+        continue;
+      }
+      const rollKey = row.roll.toLowerCase();
+      if (seenRolls.has(rollKey) || existingRolls.has(rollKey)) {
+        summary.duplicates += 1;
+        if (summary.messages.length < 10) summary.messages.push(`Row ${row.rowNumber}: Roll Number ${row.roll} already exists.`);
+        continue;
+      }
+      seenRolls.add(rollKey);
+      try {
+        await pool.execute('INSERT INTO students (id, teacher_id, name, roll_number, course, section, qr_token) VALUES (?, ?, ?, ?, ?, ?, ?)', [crypto.randomUUID(), request.teacher.teacherId, row.name, row.roll, row.course, row.section, makeToken()]);
+        summary.imported += 1;
+      } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+          summary.duplicates += 1;
+          existingRolls.add(rollKey);
+          if (summary.messages.length < 10) summary.messages.push(`Row ${row.rowNumber}: Roll Number ${row.roll} already exists.`);
+        } else {
+          summary.errors += 1;
+          if (summary.messages.length < 10) summary.messages.push(`Row ${row.rowNumber}: could not be imported.`);
+        }
+      }
+    }
+    response.status(201).json(summary);
+  } catch (error) { next(error); }
+});
+
+app.put('/api/students/:id', async (request, response, next) => {
+  const { name, roll, course, section } = request.body || {};
+  if (!validText(name, 120) || !validText(roll, 60) || !validText(course, 160) || !validText(section, 20)) {
+    response.status(400).json({ error: 'Name, roll number, course, and section are required.' });
+    return;
+  }
+  try {
+    const [result] = await pool.execute(`UPDATE students
+      SET name = ?, roll_number = ?, course = ?, section = ?
+      WHERE id = ? AND teacher_id = ?`, [name.trim(), roll.trim(), course.trim(), section.trim(), request.params.id, request.teacher.teacherId]);
+    if (!result.affectedRows) { response.status(404).json({ error: 'Student not found.' }); return; }
+    const [rows] = await pool.execute(`SELECT ${studentFields} FROM students WHERE id = ? AND teacher_id = ?`, [request.params.id, request.teacher.teacherId]);
+    response.json(rows[0]);
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') { response.status(409).json({ error: 'This roll number already exists.' }); return; }
     next(error);
@@ -303,6 +403,7 @@ app.get(/.*/, (_request, response) => response.sendFile(path.join(frontendPath, 
 
 app.use((error, _request, response, _next) => {
   console.error(error);
+  if (error instanceof multer.MulterError) { response.status(400).json({ error: 'Upload a single CSV or Excel file smaller than 5 MB.' }); return; }
   response.status(500).json({ error: 'Server error. Check the backend terminal for details.' });
 });
 
