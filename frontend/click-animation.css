@@ -1,0 +1,11 @@
+/* Adds a quick, tactile press animation to every button in the app.
+   Uses a plain element selector so any button-specific active states
+   already defined elsewhere (e.g. soft-3d.css primary-btn press effect)
+   keep winning on specificity and are not overridden. */
+button{transition:transform .12s ease}
+button:active{transform:scale(.95)}
+
+@media(prefers-reduced-motion:reduce){
+  button{transition:none!important}
+  button:active{transform:none!important}
+}
