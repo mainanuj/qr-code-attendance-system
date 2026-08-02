@@ -23,11 +23,12 @@
     <link rel="stylesheet" href="modal-glass.css" />
     <link rel="stylesheet" href="qr-modal-glass.css" />
     <link rel="stylesheet" href="auth-glass.css" />
-    <link rel="stylesheet" href="futuristic-modern.css" />
+    <link id="futuristicDarkTheme" rel="stylesheet" href="futuristic-modern.css" />
+    <link rel="stylesheet" href="theme-toggle.css" />
   </head>
   <body>
     <section class="public-landing" id="publicLanding">
-      <header class="public-header"><a class="brand" href="#publicLanding"><span class="brand-mark">A</span><span>attendly</span></a><button class="outline-btn" id="openTeacherLogin" type="button">Teacher login</button></header>
+      <header class="public-header"><a class="brand" href="#publicLanding"><span class="brand-mark">A</span><span>attendly</span></a><div class="public-header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode">☀ Light mode</button><button class="outline-btn" id="openTeacherLogin" type="button">Teacher login</button></div></header>
       <main class="public-main">
         <div class="public-heading"><p class="eyebrow">QR ATTENDANCE SYSTEM</p><h1>Scan QR to mark attendance</h1></div>
         <section class="public-scanner public-scanner-top" id="publicScanner"><div class="public-scanner-copy"><p class="eyebrow">PUBLIC CHECK-IN</p><h2>Scan student QR</h2><p>Open the camera and point it at the student's QR card. The server securely decides whether attendance is accepted, present, or late.</p><div class="scanner-actions"><button class="primary-btn" id="publicStartCamera" type="button">Start camera</button><button class="outline-btn" id="publicStopCamera" type="button">Stop</button></div><label class="public-manual-label">QR token or roll number<input id="publicManualToken" placeholder="e.g. ATD-3A8F12" /></label><button class="secondary-btn wide" id="publicManualCheckin" type="button">Mark attendance</button><div class="scan-result" id="publicScanResult" role="status"></div></div><div class="camera-frame public-camera-frame"><video id="publicCameraVideo" autoplay muted playsinline></video><div class="camera-placeholder" id="publicCameraPlaceholder"><span>QR</span><h3>Camera is off</h3><p>Start the camera to scan a QR code.</p></div><div class="scan-corners"></div></div></section>
@@ -67,7 +68,7 @@
       <main class="main-content">
         <header class="topbar">
           <div><p class="eyebrow" id="todayLabel">MONDAY, 22 JULY</p><h1 id="pageTitle">Good morning, Alex <span>✦</span></h1></div>
-          <div class="top-actions"><button class="icon-button" title="Notifications">♧<i></i></button><button class="primary-btn scan-nav" data-view="scanner">Scan QR <span>⌁</span></button></div>
+          <div class="top-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode">☀ Light mode</button><button class="icon-button" title="Notifications">♧<i></i></button><button class="primary-btn scan-nav" data-view="scanner">Scan QR <span>⌁</span></button></div>
         </header>
 
         <section class="view active" id="dashboard">
@@ -124,5 +125,6 @@
     <script src="auth.js"></script>
     <script src="settings.js"></script>
     <script src="public.js"></script>
+    <script src="theme-toggle.js"></script>
   </body>
 </html>

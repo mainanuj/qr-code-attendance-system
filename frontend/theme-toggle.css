@@ -1,0 +1,141 @@
+/* The friend’s futuristic-dark theme remains the default. These rules restore the light design only after the toggle is pressed. */
+.public-header-actions { display: flex; align-items: center; gap: 10px; }
+.theme-toggle { min-height: 38px; padding: 0 13px; border: 1px solid #a7b5ff42; border-radius: 10px; background: #ffffff0a; color: #dfe8ff; font: 700 12px/1 Manrope, sans-serif; cursor: pointer; transition: transform .2s ease, background .2s ease, box-shadow .2s ease; }
+.theme-toggle:hover { transform: translateY(-1px); background: #7587ff26; box-shadow: 0 8px 18px #0004; }
+
+body.light-theme { background: #f4f6fc !important; color: #14244a !important; }
+body.light-theme:before { background: radial-gradient(circle at 8% 0, #cbd5ff77, transparent 31rem), radial-gradient(circle at 95% 12%, #b7f3eb66, transparent 26rem), #f4f6fc !important; }
+body.light-theme.authenticated { background: radial-gradient(circle at 72% 0, #e5e9ff 0, transparent 29%), radial-gradient(circle at 9% 88%, #dcf6ef 0, transparent 26%), #f6f7fb !important; }
+body.light-theme .theme-toggle { color: #304674; background: #ffffffd9; border-color: #d5ddf0; box-shadow: 0 6px 16px #41598614; }
+body.light-theme .theme-toggle:hover { background: #eef1ff; box-shadow: 0 9px 20px #41598621; }
+
+body.light-theme .public-landing, body.light-theme .auth-screen { background: transparent !important; color: #14244a !important; }
+body.light-theme .public-header { background: #ffffffdf !important; border-bottom-color: #dce2ef !important; box-shadow: 0 8px 22px #25375e12 !important; }
+body.light-theme .public-header .brand, body.light-theme .auth-panel .brand, body.light-theme .authenticated .brand { color: #14244a !important; }
+body.light-theme .public-heading h1 { background: none !important; -webkit-text-fill-color: initial; color: #14244a !important; text-shadow: none !important; }
+body.light-theme .public-heading .eyebrow, body.light-theme .public-scanner-copy .eyebrow, body.light-theme .authenticated .eyebrow { color: #5368cc !important; }
+body.light-theme .public-scanner, body.light-theme .public-rate-card { color: #14244a !important; background: #ffffffdf !important; border-color: #dce3f3 !important; box-shadow: 0 18px 42px #34446c12 !important; }
+body.light-theme .public-session-card { color: #fff !important; background: linear-gradient(120deg, #162a55, #2c4692) !important; border-color: transparent !important; box-shadow: 0 18px 40px #2435682c !important; }
+body.light-theme .public-session-card h2 { color: #fff !important; }
+body.light-theme .public-scanner-copy h2, body.light-theme .public-rate-card strong { color: #14244a !important; }
+body.light-theme .public-scanner-copy>p:not(.eyebrow), body.light-theme .public-rate-card p, body.light-theme .public-rate-card small, body.light-theme .public-manual-label { color: #6d7d9d !important; }
+body.light-theme .public-manual-label input { background: #f9fbff !important; border-color: #d6deee !important; color: #14244a !important; }
+
+body.light-theme .auth-copy h1, body.light-theme .authenticated .topbar h1, body.light-theme .authenticated .page-heading h2 { color: #14244a !important; text-shadow: none !important; }
+body.light-theme .auth-copy>p:last-child, body.light-theme .auth-toggle, body.light-theme .auth-form label { color: #647493 !important; }
+body.light-theme .auth-form input { background: #fff !important; border-color: #d7dfef !important; color: #14244a !important; }
+body.light-theme .auth-art { background: radial-gradient(circle at 40% 40%, #9bb1ff, #edf1ff 66%) !important; }
+
+body.light-theme .authenticated .sidebar { background: #ffffffdf !important; border-right-color: #dce3f3 !important; box-shadow: 12px 0 30px #34446c0d !important; }
+body.light-theme .authenticated .nav-link { color: #61718e !important; }
+body.light-theme .authenticated .nav-link:hover { color: #304fc4 !important; background: #eef1ff !important; border-color: #e0e5f5 !important; }
+body.light-theme .authenticated .nav-link.active { color: #4057dc !important; background: #edf0ff !important; border-color: #d9defe !important; box-shadow: inset 3px 0 0 #5b6df2, 0 7px 18px #41598612 !important; }
+body.light-theme .authenticated .sidebar-bottom, body.light-theme .authenticated .topbar { border-color: #dce3f3 !important; }
+body.light-theme .authenticated .teacher-card strong, body.light-theme .authenticated .checkin-main strong, body.light-theme .authenticated td:first-child { color: #14244a !important; }
+body.light-theme .authenticated .teacher-card small, body.light-theme .authenticated .settings-button, body.light-theme .authenticated .muted, body.light-theme .authenticated .quick-card p, body.light-theme .authenticated .stat-card p, body.light-theme .authenticated .manual-card p { color: #72809b !important; }
+body.light-theme .authenticated .welcome-card { background: linear-gradient(130deg, #263f89, #3856ad 64%, #6658a5) !important; border-color: #8094e7 !important; box-shadow: 0 20px 46px #304c941f !important; }
+body.light-theme .authenticated .quick-card, body.light-theme .authenticated .stat-card, body.light-theme .authenticated .panel, body.light-theme .authenticated .scanner-card, body.light-theme .authenticated .manual-card, body.light-theme .authenticated .class-setting-card { color: #14244a !important; background: #ffffffdf !important; border-color: #dce3f3 !important; box-shadow: 0 14px 34px #34446c10 !important; }
+body.light-theme .authenticated th { background: #f4f6fc !important; color: #71809d !important; }
+body.light-theme .authenticated td, body.light-theme .authenticated .checkin-time { color: #657592 !important; border-color: #e6eaf3 !important; }
+body.light-theme .authenticated .toolbar { background: #ffffffdf !important; border-color: #dce3f3 !important; box-shadow: 0 8px 20px #34446c0c !important; }
+body.light-theme .authenticated .search-box, body.light-theme .authenticated select, body.light-theme .authenticated .field-label input, body.light-theme .authenticated .manual-card input, body.light-theme .authenticated .form-grid input { background: #fbfcff !important; border-color: #d5deee !important; color: #14244a !important; }
+body.light-theme .authenticated .settings-info { background: #edf0ff !important; border-color: #d9defe !important; color: #3b50a8 !important; }
+body.light-theme .authenticated dialog { background: #ffffff !important; color: #14244a !important; border-color: #e0e5f0 !important; }
+body.light-theme .authenticated .close-btn { background: #edf0f7 !important; color: #53627f !important; }
+
+@media (max-width: 620px) { .theme-toggle { min-height: 34px; padding: 0 9px; font-size: 11px; } .public-header-actions { gap: 6px; } }
+
+/* Complete the dark skin for controls that live outside .authenticated (dialogs)
+   and for the separate dashboard-session settings card. */
+body:not(.light-theme) .dashboard-session-card {
+  color: #edf3ff !important;
+  background: linear-gradient(145deg, #101a34e8, #0b1328e8) !important;
+  border-color: #8294ff30 !important;
+  box-shadow: 0 16px 42px #0006, 0 0 0 1px #ffffff08 inset !important;
+}
+body:not(.light-theme) .dashboard-session-card h3 { color: #f4f7ff !important; }
+body:not(.light-theme) .dashboard-session-card > div > p:not(.eyebrow),
+body:not(.light-theme) .dashboard-session-form label { color: #a9b7d2 !important; }
+body:not(.light-theme) .dashboard-session-form input,
+body:not(.light-theme) .class-setting-card input {
+  color: #eaf1ff !important;
+  background: #071026 !important;
+  border-color: #8294be4a !important;
+  box-shadow: inset 2px 2px 5px #0005, inset -1px -1px 2px #ffffff08 !important;
+}
+body:not(.light-theme) .dashboard-session-form input:focus,
+body:not(.light-theme) .class-setting-card input:focus { border-color: #7b8cff !important; box-shadow: 0 0 0 4px #7188ff1d !important; }
+body:not(.light-theme) .authenticated .settings-info span {
+  color: #cbd7ff !important;
+  background: #071026 !important;
+  border: 1px solid #8294be38 !important;
+  box-shadow: inset 0 1px 0 #ffffff0a !important;
+}
+
+body:not(.light-theme) #studentModal,
+body:not(.light-theme) #importModal,
+body:not(.light-theme) #qrModal {
+  color: #edf3ff !important;
+  background: linear-gradient(145deg, #121d39f5, #0a1228f5) !important;
+  border-color: #8294ff55 !important;
+  box-shadow: 0 28px 80px #000b, 0 0 0 1px #ffffff0b inset !important;
+}
+body:not(.light-theme) #studentModal::backdrop,
+body:not(.light-theme) #importModal::backdrop,
+body:not(.light-theme) #qrModal::backdrop { background: #020713a6 !important; backdrop-filter: blur(6px); }
+body:not(.light-theme) #studentModal .modal-heading h2,
+body:not(.light-theme) #importModal .modal-heading h2,
+body:not(.light-theme) #qrModal h2 { color: #f5f8ff !important; }
+body:not(.light-theme) #studentModal .form-intro,
+body:not(.light-theme) #importModal .form-intro,
+body:not(.light-theme) #qrModal .muted,
+body:not(.light-theme) #studentModal .form-grid label,
+body:not(.light-theme) #importModal .import-file-label,
+body:not(.light-theme) #importModal .import-file-name { color: #a9b7d2 !important; }
+body:not(.light-theme) #studentModal .form-grid input,
+body:not(.light-theme) #importModal .import-file-label input {
+  color: #eaf1ff !important;
+  background: #071026 !important;
+  border-color: #8294be4a !important;
+  box-shadow: inset 2px 2px 5px #0005, inset -1px -1px 2px #ffffff08 !important;
+}
+body:not(.light-theme) #studentModal .close-btn,
+body:not(.light-theme) #importModal .close-btn,
+body:not(.light-theme) #qrModal .qr-close { color: #dce7ff !important; background: #ffffff12 !important; box-shadow: none !important; }
+body:not(.light-theme) #studentModal .outline-btn,
+body:not(.light-theme) #importModal .outline-btn { color: #dfe8ff !important; background: #ffffff0a !important; border-color: #a7b5ff42 !important; box-shadow: none !important; }
+body:not(.light-theme) #importModal .import-guide { color: #dce7ff !important; background: #13224a !important; border-color: #6680e05a !important; box-shadow: none !important; }
+body:not(.light-theme) #importModal .import-guide span { color: #cbd7ff !important; background: #ffffff0d !important; }
+body:not(.light-theme) #qrModal #qrToken { color: #cbd7ff !important; background: #ffffff0d !important; }
+
+/* Teacher login and account creation use the same dark glass surface. */
+body:not(.light-theme) .auth-screen {
+  color: #edf3ff !important;
+  background: radial-gradient(circle at 8% 7%, #263a774d, transparent 28rem), radial-gradient(circle at 90% 88%, #1d8b8452, transparent 27rem), #080d1b !important;
+}
+body:not(.light-theme) .auth-panel {
+  color: #edf3ff !important;
+  background: linear-gradient(145deg, #101a34ed, #0b1328ed) !important;
+  border-color: #8294ff3d !important;
+  box-shadow: 18px 22px 52px #0009, 0 0 0 1px #ffffff0b inset !important;
+}
+body:not(.light-theme) .auth-panel .brand { color: #f5f8ff !important; }
+body:not(.light-theme) .auth-copy .eyebrow { color: #72f0df !important; }
+body:not(.light-theme) .auth-copy h1 {
+  color: #f5f8ff !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+body:not(.light-theme) .auth-copy > p:last-child,
+body:not(.light-theme) .auth-toggle { color: #a9b7d2 !important; }
+body:not(.light-theme) .auth-form label { color: #c5d1e7 !important; }
+body:not(.light-theme) .auth-form input {
+  color: #edf3ff !important;
+  background: #071026 !important;
+  border-color: #8294be4a !important;
+  box-shadow: inset 2px 2px 5px #0005, inset -1px -1px 2px #ffffff08 !important;
+}
+body:not(.light-theme) .auth-form input:focus { border-color: #7b8cff !important; box-shadow: 0 0 0 4px #7188ff1d !important; }
+body:not(.light-theme) .auth-toggle button,
+body:not(.light-theme) .auth-back { color: #9ba9ff !important; }
+body:not(.light-theme) .auth-error:not(:empty) { color: #ffb7b2 !important; background: #631f2a66 !important; }
