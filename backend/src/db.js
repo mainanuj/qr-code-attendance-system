@@ -14,6 +14,18 @@ export const pool = mysql.createPool({
 
 export async function verifyDatabase() {
   const connection = await pool.getConnection();
-  try { await connection.ping(); }
-  finally { connection.release(); }
+  try {
+    await connection.ping();
+    await connection.execute(`CREATE TABLE IF NOT EXISTS daily_class_sessions (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      teacher_id CHAR(36) NOT NULL,
+      course VARCHAR(160) NOT NULL,
+      section VARCHAR(20) NOT NULL DEFAULT 'General',
+      session_date DATE NOT NULL,
+      status ENUM('Active', 'Ended') NOT NULL DEFAULT 'Active',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_daily_class_session (session_date, course, section),
+      INDEX idx_session_date (session_date)
+    )`);
+  } finally { connection.release(); }
 }

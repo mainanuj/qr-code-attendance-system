@@ -82,6 +82,14 @@ app.get('/api/public/summary', async (_request, response, next) => {
   } catch (error) { next(error); }
 });
 
+app.get('/api/public/session-status', async (_request, response, next) => {
+  try {
+    const [rows] = await pool.query(`SELECT id, teacher_id AS teacherId, course, section, DATE_FORMAT(session_date, '%Y-%m-%d') AS date, status
+      FROM daily_class_sessions WHERE session_date = CURDATE() AND status = 'Active'`);
+    response.json({ active: rows.length > 0, sessions: rows });
+  } catch (error) { next(error); }
+});
+
 app.post('/api/public/check-in', async (request, response, next) => {
   const code = String(request.body?.code || '').trim();
   if (!code) { response.status(400).json({ error: 'QR token or roll number is required.' }); return; }
@@ -90,6 +98,14 @@ app.post('/api/public/check-in', async (request, response, next) => {
       FROM students WHERE qr_token = ? OR roll_number = ? LIMIT 1`, [code, code]);
     const student = students[0];
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
+    
+    const [activeSessions] = await pool.execute(`SELECT id FROM daily_class_sessions
+      WHERE session_date = CURDATE() AND course = ? AND status = 'Active' LIMIT 1`, [student.course]);
+    if (!activeSessions.length) {
+      response.status(409).json({ error: `Today's class session for ${student.course} has not been started yet. Click "Start Today's Class" to begin.` });
+      return;
+    }
+
     const [settings] = await pool.execute(`SELECT TIME_FORMAT(start_time, '%H:%i:%s') AS startTime,
       TIME_FORMAT(present_until, '%H:%i:%s') AS presentUntil, TIME_FORMAT(end_time, '%H:%i:%s') AS endTime
       FROM class_attendance_settings WHERE teacher_id = ? AND course = ? LIMIT 1`, [student.teacherId, student.course]);
@@ -215,6 +231,38 @@ app.put('/api/classes/attendance-settings', async (request, response, next) => {
       ON DUPLICATE KEY UPDATE start_time = VALUES(start_time), present_until = VALUES(present_until), end_time = VALUES(end_time)`,
     [crypto.randomUUID(), request.teacher.teacherId, course.trim(), startTime, presentUntil, endTime]);
     response.json({ course: course.trim(), startTime, presentUntil, endTime });
+  } catch (error) { next(error); }
+});
+
+app.post('/api/classes/start-session', async (request, response, next) => {
+  try {
+    const teacherId = request.teacher.teacherId;
+    let course = String(request.body?.course || '').trim();
+    let section = String(request.body?.section || '').trim();
+    if (!course) {
+      const [[dashSettings]] = await pool.execute('SELECT course_label FROM teacher_dashboard_settings WHERE teacher_id = ? LIMIT 1', [teacherId]);
+      course = dashSettings?.course_label || '';
+    }
+    if (!course) {
+      const [[firstStudent]] = await pool.execute('SELECT course, section FROM students WHERE teacher_id = ? ORDER BY created_at LIMIT 1', [teacherId]);
+      course = firstStudent?.course || 'General Class';
+      if (!section) section = firstStudent?.section || 'General';
+    }
+    if (!section) section = 'General';
+
+    const [allCourses] = await pool.execute('SELECT DISTINCT course, section FROM students WHERE teacher_id = ?', [teacherId]);
+    const targetCourses = allCourses.length ? allCourses : [{ course, section }];
+
+    for (const target of targetCourses) {
+      await pool.execute(`INSERT INTO daily_class_sessions (id, teacher_id, course, section, session_date, status)
+        VALUES (?, ?, ?, ?, CURDATE(), 'Active')
+        ON DUPLICATE KEY UPDATE status = 'Active'`, [crypto.randomUUID(), teacherId, target.course, target.section || 'General']);
+    }
+
+    const [sessions] = await pool.execute(`SELECT id, teacher_id AS teacherId, course, section, DATE_FORMAT(session_date, '%Y-%m-%d') AS date, status
+      FROM daily_class_sessions WHERE session_date = CURDATE() AND teacher_id = ?`, [teacherId]);
+
+    response.json({ ok: true, message: "Today's class session started successfully!", sessions });
   } catch (error) { next(error); }
 });
 
