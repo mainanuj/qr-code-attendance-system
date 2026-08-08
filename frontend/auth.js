@@ -16,6 +16,13 @@ function activateSession(session) {
   document.querySelector('#pageTitle').textContent = `Good morning, ${session.teacher.name} ✦`;
   window.clearTeacherDashboard();
   window.loadDatabaseState();
+
+  if (sessionStorage.getItem('pending-start-class') === 'true') {
+    sessionStorage.removeItem('pending-start-class');
+    setTimeout(() => {
+      if (window.startTodayClass) window.startTodayClass();
+    }, 150);
+  }
 }
 async function authRequest(path, body) {
   const response = await fetch(`/api/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

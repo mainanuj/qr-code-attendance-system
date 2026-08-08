@@ -60,7 +60,8 @@
     } catch {}
 
     if (!token) {
-      setResult('Teacher login is required to start today\'s class. Please log in first.', 'error');
+      sessionStorage.setItem('pending-start-class', 'true');
+      setResult('Teacher login is required to start today\'s class. Please log in.', 'error');
       $('#openTeacherLogin')?.click();
       return;
     }
@@ -166,6 +167,7 @@
   $('#scrollToPublicScanner')?.addEventListener('click', () => $('#publicScanner').scrollIntoView({ behavior: 'smooth', block: 'center' }));
   window.loadPublicSummary = loadPublicSummary;
   window.updatePublicSessionStatus = updateSessionStatus;
+  window.startTodayClass = startTodayClass;
   loadPublicSummary();
   updateSessionStatus();
 })();
