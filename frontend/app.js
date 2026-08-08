@@ -16,7 +16,7 @@ function escapeHtml(text) { const div = document.createElement('div'); div.textC
 function token() { return `ATD-${Math.random().toString(16).slice(2, 8).toUpperCase()}`; }
 function avatar(student, index = 0) { return `<span class="student-avatar ${['', 'alt', 'warm'][index % 3]}">${initials(student.name)}</span>`; }
 
-function render() { renderDashboard(); renderStudents(); renderRecords(); updateCourseFilter(); updateSectionFilters(); updateYearFilter(); }
+function render() { renderDashboard(); renderStudents(); renderRecords(); renderAttendanceRecords(); updateCourseFilter(); updateSectionFilters(); updateYearFilter(); }
 function renderDashboard() {
   const current = state.attendance.filter(record => record.date === today());
   const present = current.filter(record => record.status !== 'Absent').length;
@@ -50,12 +50,94 @@ function renderRecords() {
   $('#recordRows').innerHTML = rows.map((record, i) => { const student = state.students.find(s => s.id === record.studentId) || {name:'Deleted student',roll:'—',section:record.section}; return `<tr><td><div class="table-student">${avatar(student,i)}<span>${escapeHtml(student.name)}</span></div></td><td>${escapeHtml(student.roll)}</td><td>${escapeHtml(student.section || record.section || 'General')}</td><td>${formatDate(record.date)}</td><td>${record.time}</td><td><span class="status ${record.status.toLowerCase()}">${record.status.toUpperCase()}</span></td></tr>`; }).join('');
   $('#recordsEmpty').style.display = state.attendance.length ? 'none' : 'block';
 }
+function updateAttRecordStudentOptions() {
+  const select = $('#attRecordStudentSelect');
+  if (!select) return;
+  const currentValue = select.value;
+  const searchVal = $('#attRecordSearch') ? $('#attRecordSearch').value.trim().toLowerCase() : '';
+  let list = state.students;
+  if (searchVal) {
+    list = state.students.filter(s => (s.name || '').toLowerCase().includes(searchVal) || (s.roll || '').toLowerCase().includes(searchVal));
+  }
+  select.innerHTML = '<option value="">Select Student (Name / Roll No)</option>' + list.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.roll)} - ${escapeHtml(s.course)})</option>`).join('');
+  if (state.students.some(s => s.id === currentValue)) select.value = currentValue;
+}
+function renderAttendanceRecords() {
+  updateAttRecordStudentOptions();
+  const studentSelect = $('#attRecordStudentSelect');
+  const searchInput = $('#attRecordSearch');
+  if (!studentSelect || !searchInput) return;
+
+  const selectedStudentId = studentSelect.value;
+  const searchVal = searchInput.value.trim().toLowerCase();
+  const fromDate = $('#attRecordFromDate').value;
+  const toDate = $('#attRecordToDate').value;
+
+  let targetStudent = null;
+  if (selectedStudentId) {
+    targetStudent = state.students.find(s => s.id === selectedStudentId);
+  } else if (searchVal) {
+    targetStudent = state.students.find(s => s.name.toLowerCase().includes(searchVal) || s.roll.toLowerCase().includes(searchVal));
+  }
+
+  if (!targetStudent) {
+    $('#attRecordSummaryGrid').style.display = 'none';
+    $('#attRecordStudentInfo').style.display = 'none';
+    $('#attRecordRows').innerHTML = '';
+    $('#attRecordEmpty').style.display = 'block';
+    $('#attRecordEmptyTitle').textContent = searchVal ? 'No matching student found' : 'Select a student';
+    $('#attRecordEmptyMsg').textContent = searchVal
+      ? 'No student matches your search query. Try searching by name or roll number.'
+      : 'Search by student Name or Roll Number or select from the dropdown above.';
+    return;
+  }
+
+  $('#attRecordStudentInfo').style.display = 'block';
+  $('#attRecordStudentName').textContent = targetStudent.name;
+  $('#attRecordStudentMeta').textContent = `Roll: ${targetStudent.roll}  ·  Course: ${targetStudent.course}  ·  Section: ${targetStudent.section || 'General'}`;
+
+  let records = state.attendance.filter(r => r.studentId === targetStudent.id && r.status !== 'Absent');
+  if (fromDate) records = records.filter(r => r.date >= fromDate);
+  if (toDate) records = records.filter(r => r.date <= toDate);
+
+  records.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+
+  const presentCount = records.filter(r => r.status === 'Present').length;
+  const lateCount = records.filter(r => r.status === 'Late').length;
+  const totalCount = records.length;
+
+  $('#attRecordSummaryGrid').style.display = 'grid';
+  $('#attRecordTotalCount').textContent = totalCount;
+  $('#attRecordPresentCount').textContent = presentCount;
+  $('#attRecordLateCount').textContent = lateCount;
+
+  if (records.length === 0) {
+    $('#attRecordRows').innerHTML = '';
+    $('#attRecordEmpty').style.display = 'block';
+    $('#attRecordEmptyTitle').textContent = 'No attendance records';
+    $('#attRecordEmptyMsg').textContent = 'No attendance records found for this student in the selected date range.';
+  } else {
+    $('#attRecordEmpty').style.display = 'none';
+    $('#attRecordRows').innerHTML = records.map(r => {
+      let dayName = '—';
+      if (r.date) {
+        try { dayName = new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' }); } catch {}
+      }
+      return `<tr>
+        <td>${formatDate(r.date)}</td>
+        <td><strong>${dayName}</strong></td>
+        <td>${r.time}</td>
+        <td><span class="status ${r.status.toLowerCase()}">${r.status.toUpperCase()}</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
 function updateCourseFilter() {
   const select = $('#courseFilter'); const value = select.value; const courses = [...new Set(state.students.map(s => s.course))]; select.innerHTML = '<option value="">All courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''); select.value = value;
 }
 function updateSectionFilters() { const sections=[...new Set(state.students.map(student=>student.section || 'General'))].sort(); [['#sectionFilter','All sections'],['#recordSection','All sections']].forEach(([selector,label])=>{const select=$(selector);const value=select.value;select.innerHTML=`<option value="">${label}</option>`+sections.map(section=>`<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`).join('');select.value=value;}); }
 function updateYearFilter() { const select=$('#recordYear'); const value=select.value; const years=[...new Set(state.attendance.map(record=>record.date.slice(0,4)))].sort().reverse(); select.innerHTML='<option value="">All years</option>'+years.map(year=>`<option value="${year}">${year}</option>`).join(''); select.value=value; }
-function showView(view) { $$('.view').forEach(v => v.classList.toggle('active', v.id === view)); $$('.nav-link').forEach(b => b.classList.toggle('active', b.dataset.view === view)); let teacherName='Teacher'; try { teacherName=JSON.parse(sessionStorage.getItem('attendly-session'))?.teacher?.name || teacherName; } catch {} $('#pageTitle').textContent = view === 'dashboard' ? `Good morning, ${teacherName} ✦` : ({students:'Student roster',scanner:'Scan attendance',records:'Attendance log',settings:'Class settings'})[view]; if (view !== 'scanner') stopCamera(); if (view === 'settings') window.loadClassSettings?.(); }
+function showView(view) { $$('.view').forEach(v => v.classList.toggle('active', v.id === view)); $$('.nav-link').forEach(b => b.classList.toggle('active', b.dataset.view === view)); let teacherName='Teacher'; try { teacherName=JSON.parse(sessionStorage.getItem('attendly-session'))?.teacher?.name || teacherName; } catch {} $('#pageTitle').textContent = view === 'dashboard' ? `Good morning, ${teacherName} ✦` : ({students:'Student roster',scanner:'Scan attendance',records:'Attendance log','attendance-records':'Attendance Records',settings:'Class settings'})[view]; if (view !== 'scanner') stopCamera(); if (view === 'settings') window.loadClassSettings?.(); if (view === 'attendance-records' && window.fetchBackendAttendanceRecords) window.fetchBackendAttendanceRecords(); }
 function toast(message) { const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(el.timer); el.timer=setTimeout(()=>el.classList.remove('show'),3200); }
 function showCard(student) { selectedStudent = student; $('#qrName').textContent=student.name; $('#qrDetails').textContent=`${student.roll} · ${student.course} · Section ${student.section || 'General'}`; $('#qrToken').textContent=student.token; $('#qrImage').src=`https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&data=${encodeURIComponent(student.token)}`; $('#qrModal').showModal(); }
 function addStudent(event) { event.preventDefault(); const student={id:crypto.randomUUID(),name:$('#studentName').value.trim(),roll:$('#studentRoll').value.trim(),course:$('#studentCourse').value.trim(),section:$('#studentSection').value.trim(),token:token()}; if(!student.section){toast('Section is required.');return;} if(state.students.some(s=>s.roll.toLowerCase()===student.roll.toLowerCase())) {toast('That roll number already exists.');return;} state.students.push(student);saveState();$('#studentModal').close();event.target.reset();render();showCard(student);toast(`${student.name} was added and issued a QR card.`); }
@@ -73,9 +155,40 @@ $('#studentForm').addEventListener('submit',addStudent);
 $$('[data-close-student]').forEach(button=>button.addEventListener('click',()=>$('#studentModal').close()));
 $('#studentSearch').addEventListener('input',renderStudents);$('#courseFilter').addEventListener('change',renderStudents);$('#sectionFilter').addEventListener('change',renderStudents);
 $('#recordDate').value=today();$('#recordDate').addEventListener('change',renderRecords);$('#recordYear').addEventListener('change',()=>{if($('#recordYear').value)$('#recordDate').value='';renderRecords();});$('#recordSection').addEventListener('change',renderRecords);$('#recordStatus').addEventListener('change',renderRecords);$('#recordSearch').addEventListener('input',renderRecords);
+
+$('#attRecordStudentSelect')?.addEventListener('change', () => {
+  const selected = $('#attRecordStudentSelect').value;
+  if (selected) {
+    const student = state.students.find(s => s.id === selected);
+    if (student) $('#attRecordSearch').value = student.name;
+  }
+  renderAttendanceRecords();
+  if (window.fetchBackendAttendanceRecords) window.fetchBackendAttendanceRecords();
+});
+$('#attRecordSearch')?.addEventListener('input', () => {
+  renderAttendanceRecords();
+  if (window.fetchBackendAttendanceRecords) window.fetchBackendAttendanceRecords();
+});
+$('#attRecordFromDate')?.addEventListener('change', () => {
+  renderAttendanceRecords();
+  if (window.fetchBackendAttendanceRecords) window.fetchBackendAttendanceRecords();
+});
+$('#attRecordToDate')?.addEventListener('change', () => {
+  renderAttendanceRecords();
+  if (window.fetchBackendAttendanceRecords) window.fetchBackendAttendanceRecords();
+});
+$('#attRecordResetFilters')?.addEventListener('click', () => {
+  if ($('#attRecordStudentSelect')) $('#attRecordStudentSelect').value = '';
+  if ($('#attRecordSearch')) $('#attRecordSearch').value = '';
+  if ($('#attRecordFromDate')) $('#attRecordFromDate').value = '';
+  if ($('#attRecordToDate')) $('#attRecordToDate').value = '';
+  renderAttendanceRecords();
+  if (window.fetchBackendAttendanceRecords) window.fetchBackendAttendanceRecords();
+});
+
 $('#studentRows').addEventListener('click',event=>{const card=event.target.dataset.card,remove=event.target.dataset.delete;if(card)showCard(state.students.find(s=>s.id===card));if(remove){const student=state.students.find(s=>s.id===remove);if(confirm(`Remove ${student.name}? Existing attendance records will be retained.`)){state.students=state.students.filter(s=>s.id!==remove);saveState();render();toast('Student removed from roster.');}}});
 $('#manualCheckin').addEventListener('click',()=>{checkIn($('#manualToken').value);$('#manualToken').value='';});$('#manualToken').addEventListener('keydown',e=>{if(e.key==='Enter')$('#manualCheckin').click();});
 $('#startCamera').addEventListener('click',startCamera);$('#stopCamera').addEventListener('click',stopCamera);$('#exportCsv').addEventListener('click',exportCsv);$('#printCard').addEventListener('click',printCard);$('#printAll').addEventListener('click',printAll);$('.qr-close').addEventListener('click',()=>$('#qrModal').close());
 const dateLabel=new Intl.DateTimeFormat('en-US',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();$('#todayLabel').textContent=dateLabel;
-window.attendlyUI={get state(){return state;},setDatabaseState(students,attendance){state.students=students;state.attendance=attendance;saveState();render();},clearDatabaseState(){state.students=[];state.attendance=[];saveState();render();},refresh(){saveState();render();},toast,showCard,showScanResult};
+window.attendlyUI={get state(){return state;},setDatabaseState(students,attendance){state.students=students;state.attendance=attendance;saveState();render();},clearDatabaseState(){state.students=[];state.attendance=[];saveState();render();},refresh(){saveState();render();},renderAttendanceRecords,toast,showCard,showScanResult};
 render();

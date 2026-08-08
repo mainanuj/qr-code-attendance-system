@@ -58,6 +58,7 @@
           <button class="nav-link" data-view="students"><span>♙</span> Students</button>
           <button class="nav-link" data-view="scanner"><span>⌁</span> Scan attendance</button>
           <button class="nav-link" data-view="records"><span>▤</span> Attendance log</button>
+          <button class="nav-link" data-view="attendance-records"><span>📋</span> Attendance Records</button>
           <button class="nav-link" data-view="settings"><span>◷</span> Class settings</button>
         </nav>
         <div class="sidebar-bottom">
@@ -103,6 +104,73 @@
           <div class="page-heading"><div><p class="eyebrow">REGISTER</p><h2>Attendance log</h2><p class="muted">A complete record of your student check-ins.</p></div><button class="primary-btn" id="exportCsv">⇩ Export CSV</button></div>
           <div class="toolbar"><label class="field-label">Date<input type="date" id="recordDate" /></label><select id="recordYear"><option value="">All years</option></select><select id="recordSection"><option value="">All sections</option></select><select id="recordStatus"><option value="">All statuses</option><option value="Present">Present</option><option value="Late">Late</option><option value="Absent">Absent</option></select><label class="search-box">⌕ <input id="recordSearch" placeholder="Search student" /></label></div>
           <section class="panel table-panel"><table><thead><tr><th>Student</th><th>Roll no.</th><th>Section</th><th>Date</th><th>Check-in time</th><th>Status</th></tr></thead><tbody id="recordRows"></tbody></table><div class="empty-state" id="recordsEmpty"><span>▤</span><h3>No attendance records</h3><p>Scan a student QR code to begin.</p></div></section>
+        </section>
+
+        <section class="view" id="attendance-records">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">STUDENT HISTORY</p>
+              <h2>Attendance Records</h2>
+              <p class="muted">View complete date-wise attendance history and summary for any student.</p>
+            </div>
+          </div>
+          <div class="toolbar" style="flex-wrap: wrap;">
+            <select id="attRecordStudentSelect">
+              <option value="">Select Student (Name / Roll No)</option>
+            </select>
+            <label class="search-box">⌕ <input id="attRecordSearch" placeholder="Search student name or roll number..." /></label>
+            <label class="field-label">Date From<input type="date" id="attRecordFromDate" /></label>
+            <label class="field-label">Date To<input type="date" id="attRecordToDate" /></label>
+            <button class="outline-btn" id="attRecordResetFilters" type="button">Reset filters</button>
+          </div>
+
+          <div id="attRecordStudentInfo" class="panel" style="display: none; padding: 18px 24px; margin-bottom: 20px;">
+            <h3 id="attRecordStudentName" style="margin: 0 0 4px; font-size: 18px; letter-spacing: -0.4px;">Student Name</h3>
+            <p id="attRecordStudentMeta" class="muted" style="margin: 0; font-size: 12px;">Roll: - · Course: - · Section: -</p>
+          </div>
+
+          <div class="stat-grid" id="attRecordSummaryGrid" style="display: none;">
+            <article class="stat-card">
+              <span class="stat-icon indigo">♙</span>
+              <div>
+                <strong id="attRecordTotalCount">0</strong>
+                <p>Total Records</p>
+              </div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon teal">✓</span>
+              <div>
+                <strong id="attRecordPresentCount">0</strong>
+                <p>Present</p>
+              </div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon coral">◷</span>
+              <div>
+                <strong id="attRecordLateCount">0</strong>
+                <p>Late</p>
+              </div>
+            </article>
+          </div>
+
+          <section class="panel table-panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Day</th>
+                  <th>Check-in Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="attRecordRows"></tbody>
+            </table>
+            <div class="empty-state" id="attRecordEmpty">
+              <span>📋</span>
+              <h3 id="attRecordEmptyTitle">Select a student</h3>
+              <p id="attRecordEmptyMsg">Search by student Name or Roll Number or select from the dropdown above.</p>
+            </div>
+          </section>
         </section>
 
         <section class="view" id="settings">

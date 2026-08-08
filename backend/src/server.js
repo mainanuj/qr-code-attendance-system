@@ -359,6 +359,79 @@ app.delete('/api/students/:id', async (request, response, next) => {
   }
 });
 
+app.get('/api/attendance/student-records', async (request, response, next) => {
+  try {
+    const studentId = String(request.query.studentId || '').trim();
+    const query = String(request.query.q || '').trim();
+    const fromDate = String(request.query.fromDate || '').trim();
+    const toDate = String(request.query.toDate || '').trim();
+
+    let student = null;
+    if (studentId) {
+      const [students] = await pool.execute(
+        `SELECT ${studentFields} FROM students WHERE id = ? AND teacher_id = ? LIMIT 1`,
+        [studentId, request.teacher.teacherId]
+      );
+      student = students[0] || null;
+    } else if (query) {
+      const [students] = await pool.execute(
+        `SELECT ${studentFields} FROM students
+         WHERE teacher_id = ? AND (name LIKE CONCAT('%', ?, '%') OR roll_number LIKE CONCAT('%', ?, '%'))
+         ORDER BY name LIMIT 1`,
+        [request.teacher.teacherId, query, query]
+      );
+      student = students[0] || null;
+    }
+
+    if (!student) {
+      response.json({
+        student: null,
+        summary: { present: 0, late: 0, total: 0 },
+        records: []
+      });
+      return;
+    }
+
+    const conditions = ['a.student_id = ?', 's.teacher_id = ?'];
+    const params = [student.id, request.teacher.teacherId];
+
+    if (fromDate) {
+      conditions.push('a.attendance_date >= ?');
+      params.push(fromDate);
+    }
+    if (toDate) {
+      conditions.push('a.attendance_date <= ?');
+      params.push(toDate);
+    }
+
+    const [records] = await pool.execute(
+      `SELECT
+        a.id,
+        a.student_id AS studentId,
+        DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS date,
+        DAYNAME(a.attendance_date) AS day,
+        TIME_FORMAT(a.check_in_time, '%h:%i %p') AS time,
+        a.status,
+        UNIX_TIMESTAMP(a.created_at) * 1000 AS createdAt
+       FROM attendance a
+       JOIN students s ON s.id = a.student_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY a.attendance_date DESC, a.check_in_time DESC`,
+      params
+    );
+
+    const present = records.filter(r => r.status === 'Present').length;
+    const late = records.filter(r => r.status === 'Late').length;
+    const total = records.length;
+
+    response.json({
+      student,
+      summary: { present, late, total },
+      records
+    });
+  } catch (error) { next(error); }
+});
+
 app.get('/api/attendance', async (request, response, next) => {
   try {
     const date = String(request.query.date || '').trim();

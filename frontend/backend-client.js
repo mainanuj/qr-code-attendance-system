@@ -195,6 +195,61 @@ document.querySelector('#recordDate').addEventListener('change', async () => {
   } catch (error) { ui.toast(error.message); }
 }, true);
 
+async function fetchBackendAttendanceRecords() {
+  if (!backendOnline) return;
+  const studentId = document.querySelector('#attRecordStudentSelect')?.value || '';
+  const searchVal = document.querySelector('#attRecordSearch')?.value.trim() || '';
+  const fromDate = document.querySelector('#attRecordFromDate')?.value || '';
+  const toDate = document.querySelector('#attRecordToDate')?.value || '';
+
+  if (!studentId && !searchVal) return;
+
+  try {
+    const params = new URLSearchParams();
+    if (studentId) params.append('studentId', studentId);
+    else if (searchVal) params.append('q', searchVal);
+    if (fromDate) params.append('fromDate', fromDate);
+    if (toDate) params.append('toDate', toDate);
+
+    const data = await apiRequest(`/attendance/student-records?${params.toString()}`);
+    if (data && data.student) {
+      document.querySelector('#attRecordStudentInfo').style.display = 'block';
+      document.querySelector('#attRecordStudentName').textContent = data.student.name;
+      document.querySelector('#attRecordStudentMeta').textContent = `Roll: ${data.student.roll}  ·  Course: ${data.student.course}  ·  Section: ${data.student.section || 'General'}`;
+
+      document.querySelector('#attRecordSummaryGrid').style.display = 'grid';
+      document.querySelector('#attRecordTotalCount').textContent = data.summary.total;
+      document.querySelector('#attRecordPresentCount').textContent = data.summary.present;
+      document.querySelector('#attRecordLateCount').textContent = data.summary.late;
+
+      if (!data.records || data.records.length === 0) {
+        document.querySelector('#attRecordRows').innerHTML = '';
+        document.querySelector('#attRecordEmpty').style.display = 'block';
+        document.querySelector('#attRecordEmptyTitle').textContent = 'No attendance records';
+        document.querySelector('#attRecordEmptyMsg').textContent = 'No attendance records found for this student in the selected date range.';
+      } else {
+        document.querySelector('#attRecordEmpty').style.display = 'none';
+        document.querySelector('#attRecordRows').innerHTML = data.records.map(r => `<tr>
+          <td>${formatDate(r.date)}</td>
+          <td><strong>${r.day || '—'}</strong></td>
+          <td>${r.time}</td>
+          <td><span class="status ${r.status.toLowerCase()}">${r.status.toUpperCase()}</span></td>
+        </tr>`).join('');
+      }
+    } else {
+      document.querySelector('#attRecordSummaryGrid').style.display = 'none';
+      document.querySelector('#attRecordStudentInfo').style.display = 'none';
+      document.querySelector('#attRecordRows').innerHTML = '';
+      document.querySelector('#attRecordEmpty').style.display = 'block';
+      document.querySelector('#attRecordEmptyTitle').textContent = 'No matching student found';
+      document.querySelector('#attRecordEmptyMsg').textContent = 'No student matches your search query.';
+    }
+  } catch (error) {
+    console.error('Could not fetch student attendance records:', error);
+  }
+}
+window.fetchBackendAttendanceRecords = fetchBackendAttendanceRecords;
+
 loadDatabaseState();
 window.loadDatabaseState = loadDatabaseState;
 window.clearTeacherDashboard = () => { backendOnline = false; ui.clearDatabaseState(); };
