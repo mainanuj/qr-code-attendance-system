@@ -108,7 +108,7 @@ function renderAttendanceRecords() {
 
   let totalClasses = 0;
   if (state.classSessions && Array.isArray(state.classSessions) && state.classSessions.length > 0) {
-    let sessions = state.classSessions.filter(s => s.course === targetStudent.course && (s.section || 'General') === (targetStudent.section || 'General'));
+    let sessions = state.classSessions.filter(s => s.course === targetStudent.course && ((s.section || 'General') === (targetStudent.section || 'General') || s.section === 'General'));
     if (fromDate) sessions = sessions.filter(s => s.date >= fromDate);
     if (toDate) sessions = sessions.filter(s => s.date <= toDate);
     totalClasses = sessions.length;

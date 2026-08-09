@@ -440,7 +440,7 @@ app.get('/api/attendance/student-records', async (request, response, next) => {
       return;
     }
 
-    const sessionConditions = ['teacher_id = ?', 'course = ?', 'section = ?'];
+    const sessionConditions = ['teacher_id = ?', 'course = ?', '(section = ? OR section = \'General\')'];
     const sessionParams = [request.teacher.teacherId, student.course, student.section || 'General'];
 
     if (fromDate) {
