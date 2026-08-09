@@ -2,7 +2,28 @@ const settingsList = document.querySelector('#classSettingsList');
 const dashboardSettingsForm = document.querySelector('#dashboardSettingsForm');
 const escapeSettingHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
+function formatTime12h(timeStr) {
+  if (!timeStr) return '09:30 AM';
+  const [hStr, mStr] = timeStr.split(':');
+  let h = parseInt(hStr, 10);
+  const m = mStr || '00';
+  if (isNaN(h)) return timeStr;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+}
+
+function updateLateCheckinLabel(timingSettings) {
+  const labelEl = document.querySelector('#lateCheckinLabel');
+  if (!labelEl || !Array.isArray(timingSettings) || !timingSettings.length) return;
+  const firstWithTiming = timingSettings.find(s => s.presentUntil) || timingSettings[0];
+  if (firstWithTiming && firstWithTiming.presentUntil) {
+    labelEl.textContent = `After ${formatTime12h(firstWithTiming.presentUntil)}`;
+  }
+}
+
 function renderClassSettings(settings) {
+  updateLateCheckinLabel(settings);
   if (!settings.length) {
     settingsList.innerHTML = '<div class="setting-empty"><span>◷</span><h3>No classes yet</h3><p>Add a student first. Their course will appear here for timing setup.</p></div>';
     return;
@@ -60,3 +81,5 @@ settingsList.addEventListener('submit', async (event) => {
 });
 
 window.loadClassSettings = loadClassSettings;
+window.updateLateCheckinLabel = updateLateCheckinLabel;
+window.formatTime12h = formatTime12h;

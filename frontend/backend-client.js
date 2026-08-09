@@ -30,10 +30,16 @@ async function loadDatabaseState() {
     const health = await apiRequest('/health');
     if (!health.ok) return;
     const selectedDate = document.querySelector('#recordDate').value;
-    const [students, attendance, dashboardSession] = await Promise.all([apiRequest('/students'), apiRequest(`/attendance${selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''}`), apiRequest('/classes/dashboard-settings')]);
+    const [students, attendance, dashboardSession, timingSettings] = await Promise.all([
+      apiRequest('/students'),
+      apiRequest(`/attendance${selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''}`),
+      apiRequest('/classes/dashboard-settings'),
+      apiRequest('/classes/attendance-settings').catch(() => [])
+    ]);
     backendOnline = true;
     ui.setDatabaseState(students, attendance);
     updateDashboardSession(dashboardSession);
+    window.updateLateCheckinLabel?.(timingSettings);
     ui.toast('Connected to the MySQL attendance database.');
   } catch (error) {
     console.error('Could not load MySQL data:', error);
