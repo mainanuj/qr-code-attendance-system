@@ -218,9 +218,12 @@ async function fetchBackendAttendanceRecords() {
       document.querySelector('#attRecordStudentMeta').textContent = `Roll: ${data.student.roll}  ·  Course: ${data.student.course}  ·  Section: ${data.student.section || 'General'}`;
 
       document.querySelector('#attRecordSummaryGrid').style.display = 'grid';
-      document.querySelector('#attRecordTotalCount').textContent = data.summary.total;
+      if (document.querySelector('#attRecordTotalClasses')) document.querySelector('#attRecordTotalClasses').textContent = data.summary.totalClasses;
+      if (document.querySelector('#attRecordTotalCount')) document.querySelector('#attRecordTotalCount').textContent = data.summary.totalClasses;
       document.querySelector('#attRecordPresentCount').textContent = data.summary.present;
       document.querySelector('#attRecordLateCount').textContent = data.summary.late;
+      if (document.querySelector('#attRecordAbsentCount')) document.querySelector('#attRecordAbsentCount').textContent = data.summary.absent;
+      if (document.querySelector('#attRecordPercentage')) document.querySelector('#attRecordPercentage').textContent = `${data.summary.attendancePercentage}%`;
 
       if (!data.records || data.records.length === 0) {
         document.querySelector('#attRecordRows').innerHTML = '';

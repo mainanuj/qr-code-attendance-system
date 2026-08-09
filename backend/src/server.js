@@ -434,11 +434,31 @@ app.get('/api/attendance/student-records', async (request, response, next) => {
     if (!student) {
       response.json({
         student: null,
-        summary: { present: 0, late: 0, total: 0 },
+        summary: { totalClasses: 0, present: 0, late: 0, absent: 0, attendancePercentage: 0, total: 0 },
         records: []
       });
       return;
     }
+
+    const sessionConditions = ['teacher_id = ?', 'course = ?', 'section = ?'];
+    const sessionParams = [request.teacher.teacherId, student.course, student.section || 'General'];
+
+    if (fromDate) {
+      sessionConditions.push('session_date >= ?');
+      sessionParams.push(fromDate);
+    }
+    if (toDate) {
+      sessionConditions.push('session_date <= ?');
+      sessionParams.push(toDate);
+    }
+
+    const [[sessionRow]] = await pool.execute(
+      `SELECT COUNT(DISTINCT session_date) AS totalClasses
+       FROM daily_class_sessions
+       WHERE ${sessionConditions.join(' AND ')}`,
+      sessionParams
+    );
+    const totalClasses = Number(sessionRow?.totalClasses || 0);
 
     const conditions = ['a.student_id = ?', 's.teacher_id = ?'];
     const params = [student.id, request.teacher.teacherId];
@@ -470,11 +490,22 @@ app.get('/api/attendance/student-records', async (request, response, next) => {
 
     const present = records.filter(r => r.status === 'Present').length;
     const late = records.filter(r => r.status === 'Late').length;
-    const total = records.length;
+    const attended = present + late;
+    const absent = Math.max(0, totalClasses - attended);
+    const attendancePercentage = totalClasses > 0
+      ? Math.round((attended / totalClasses) * 100 * 10) / 10
+      : 0;
 
     response.json({
       student,
-      summary: { present, late, total },
+      summary: {
+        totalClasses,
+        present,
+        late,
+        absent,
+        attendancePercentage,
+        total: totalClasses
+      },
       records
     });
   } catch (error) { next(error); }

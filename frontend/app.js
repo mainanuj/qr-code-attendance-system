@@ -104,12 +104,28 @@ function renderAttendanceRecords() {
 
   const presentCount = records.filter(r => r.status === 'Present').length;
   const lateCount = records.filter(r => r.status === 'Late').length;
-  const totalCount = records.length;
+  const attendedCount = presentCount + lateCount;
+
+  let totalClasses = 0;
+  if (state.classSessions && Array.isArray(state.classSessions) && state.classSessions.length > 0) {
+    let sessions = state.classSessions.filter(s => s.course === targetStudent.course && (s.section || 'General') === (targetStudent.section || 'General'));
+    if (fromDate) sessions = sessions.filter(s => s.date >= fromDate);
+    if (toDate) sessions = sessions.filter(s => s.date <= toDate);
+    totalClasses = sessions.length;
+  } else {
+    totalClasses = Math.max(records.length, attendedCount);
+  }
+
+  const absentCount = Math.max(0, totalClasses - attendedCount);
+  const percentage = totalClasses > 0 ? Math.round((attendedCount / totalClasses) * 100 * 10) / 10 : 0;
 
   $('#attRecordSummaryGrid').style.display = 'grid';
-  $('#attRecordTotalCount').textContent = totalCount;
+  if ($('#attRecordTotalClasses')) $('#attRecordTotalClasses').textContent = totalClasses;
+  if ($('#attRecordTotalCount')) $('#attRecordTotalCount').textContent = totalClasses;
   $('#attRecordPresentCount').textContent = presentCount;
   $('#attRecordLateCount').textContent = lateCount;
+  if ($('#attRecordAbsentCount')) $('#attRecordAbsentCount').textContent = absentCount;
+  if ($('#attRecordPercentage')) $('#attRecordPercentage').textContent = `${percentage}%`;
 
   if (records.length === 0) {
     $('#attRecordRows').innerHTML = '';
