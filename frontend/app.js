@@ -38,7 +38,7 @@ function renderDashboard() {
 function renderStudents() {
   const term = $('#studentSearch').value.toLowerCase(); const course = $('#courseFilter').value; const section = $('#sectionFilter').value;
   const students = state.students.filter(s => (!course || s.course === course) && (!section || s.section === section) && `${s.name} ${s.roll}`.toLowerCase().includes(term));
-  $('#studentRows').innerHTML = students.map((student, i) => `<tr><td><div class="table-student">${avatar(student,i)}<span>${escapeHtml(student.name)}</span></div></td><td>${escapeHtml(student.roll)}</td><td>${escapeHtml(student.course)}</td><td>${escapeHtml(student.section || 'General')}</td><td><span class="qr-issued">● ISSUED</span></td><td><div class="row-actions"><button class="small-btn" data-card="${student.id}">View QR</button><button class="small-btn danger" data-delete="${student.id}" title="Delete student">×</button></div></td></tr>`).join('');
+  $('#studentRows').innerHTML = students.map((student, i) => `<tr><td>${i + 1}</td><td><div class="table-student">${avatar(student,i)}<span>${escapeHtml(student.name)}</span></div></td><td>${escapeHtml(student.roll)}</td><td>${escapeHtml(student.course)}</td><td>${escapeHtml(student.section || 'General')}</td><td><span class="qr-issued">● ISSUED</span></td><td><div class="row-actions"><button class="small-btn" data-card="${student.id}">View QR</button><button class="small-btn danger" data-delete="${student.id}" title="Delete student">×</button></div></td></tr>`).join('');
   $('#studentRows').querySelectorAll('[data-delete]').forEach((deleteButton) => { const editButton=document.createElement('button'); editButton.type='button'; editButton.className='small-btn edit-btn'; editButton.dataset.edit=deleteButton.dataset.delete; editButton.title='Edit student'; editButton.textContent='Edit'; deleteButton.before(editButton); });
   $('#studentsEmpty').style.display = state.students.length ? 'none' : 'block';
 }
@@ -47,7 +47,7 @@ function renderRecords() {
   const rows = [...state.attendance].sort((a,b) => b.createdAt-a.createdAt).filter(record => {
     const student = state.students.find(s => s.id === record.studentId) || {}; const recordSection = student.section || record.section || 'General'; return (!date || record.date === date) && (!year || record.date.startsWith(year)) && (!section || recordSection === section) && (!status || record.status === status) && (!term || (student.name || '').toLowerCase().includes(term));
   });
-  $('#recordRows').innerHTML = rows.map((record, i) => { const student = state.students.find(s => s.id === record.studentId) || {name:'Deleted student',roll:'—',section:record.section}; return `<tr><td><div class="table-student">${avatar(student,i)}<span>${escapeHtml(student.name)}</span></div></td><td>${escapeHtml(student.roll)}</td><td>${escapeHtml(student.section || record.section || 'General')}</td><td>${formatDate(record.date)}</td><td>${record.time}</td><td><span class="status ${record.status.toLowerCase()}">${record.status.toUpperCase()}</span></td></tr>`; }).join('');
+  $('#recordRows').innerHTML = rows.map((record, i) => { const student = state.students.find(s => s.id === record.studentId) || {name:'Deleted student',roll:'—',section:record.section}; return `<tr><td>${i + 1}</td><td><div class="table-student">${avatar(student,i)}<span>${escapeHtml(student.name)}</span></div></td><td>${escapeHtml(student.roll)}</td><td>${escapeHtml(student.section || record.section || 'General')}</td><td>${formatDate(record.date)}</td><td>${record.time}</td><td><span class="status ${record.status.toLowerCase()}">${record.status.toUpperCase()}</span></td></tr>`; }).join('');
   $('#recordsEmpty').style.display = state.attendance.length ? 'none' : 'block';
 }
 function updateAttRecordStudentOptions() {
@@ -134,12 +134,13 @@ function renderAttendanceRecords() {
     $('#attRecordEmptyMsg').textContent = 'No attendance records found for this student in the selected date range.';
   } else {
     $('#attRecordEmpty').style.display = 'none';
-    $('#attRecordRows').innerHTML = records.map(r => {
+    $('#attRecordRows').innerHTML = records.map((r, i) => {
       let dayName = '—';
       if (r.date) {
         try { dayName = new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' }); } catch {}
       }
       return `<tr>
+        <td>${i + 1}</td>
         <td>${formatDate(r.date)}</td>
         <td><strong>${dayName}</strong></td>
         <td>${r.time}</td>

@@ -92,7 +92,7 @@
         <section class="view" id="students">
           <div class="page-heading"><div><p class="eyebrow"></p><h2></h2><p class="muted">Add students and issue an individual, secure QR code.</p></div><div class="student-page-actions"><button class="outline-btn" id="openImportModal" type="button">Import students</button><button class="primary-btn" id="openStudentModal">+ Add student</button></div></div>
           <div class="toolbar"><label class="search-box">⌕ <input id="studentSearch" placeholder="Search by name or roll number" /></label><select id="courseFilter"><option value="">All courses</option></select><select id="sectionFilter"><option value="">All sections</option></select><button class="outline-btn" id="printAll">▣ Print all cards</button></div>
-          <section class="panel table-panel"><table><thead><tr><th>Student</th><th>Roll no.</th><th>Course</th><th>Section</th><th>QR status</th><th></th></tr></thead><tbody id="studentRows"></tbody></table><div class="empty-state" id="studentsEmpty"><span>♙</span><h3>No students yet</h3><p>Add your first student to generate a QR card.</p></div></section>
+          <section class="panel table-panel"><table><thead><tr><th>No.</th><th>Student</th><th>Roll no.</th><th>Course</th><th>Section</th><th>QR status</th><th></th></tr></thead><tbody id="studentRows"></tbody></table><div class="empty-state" id="studentsEmpty"><span>♙</span><h3>No students yet</h3><p>Add your first student to generate a QR card.</p></div></section>
         </section>
 
         <section class="view" id="scanner">
@@ -103,7 +103,7 @@
         <section class="view" id="records">
           <div class="page-heading"><div><p class="eyebrow">REGISTER</p><h2>Attendance log</h2><p class="muted">A complete record of your student check-ins.</p></div><button class="primary-btn" id="exportCsv">⇩ Export CSV</button></div>
           <div class="toolbar"><label class="field-label">Date<input type="date" id="recordDate" /></label><select id="recordYear"><option value="">All years</option></select><select id="recordSection"><option value="">All sections</option></select><select id="recordStatus"><option value="">All statuses</option><option value="Present">Present</option><option value="Late">Late</option><option value="Absent">Absent</option></select><label class="search-box">⌕ <input id="recordSearch" placeholder="Search student" /></label></div>
-          <section class="panel table-panel"><table><thead><tr><th>Student</th><th>Roll no.</th><th>Section</th><th>Date</th><th>Check-in time</th><th>Status</th></tr></thead><tbody id="recordRows"></tbody></table><div class="empty-state" id="recordsEmpty"><span>▤</span><h3>No attendance records</h3><p>Scan a student QR code to begin.</p></div></section>
+          <section class="panel table-panel"><table><thead><tr><th>No.</th><th>Student</th><th>Roll no.</th><th>Section</th><th>Date</th><th>Check-in time</th><th>Status</th></tr></thead><tbody id="recordRows"></tbody></table><div class="empty-state" id="recordsEmpty"><span>▤</span><h3>No attendance records</h3><p>Scan a student QR code to begin.</p></div></section>
         </section>
 
         <section class="view" id="attendance-records">
@@ -171,6 +171,7 @@
             <table>
               <thead>
                 <tr>
+                  <th>No.</th>
                   <th>Date</th>
                   <th>Day</th>
                   <th>Check-in Time</th>

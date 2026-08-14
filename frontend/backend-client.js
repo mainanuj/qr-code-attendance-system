@@ -238,7 +238,8 @@ async function fetchBackendAttendanceRecords() {
         document.querySelector('#attRecordEmptyMsg').textContent = 'No attendance records found for this student in the selected date range.';
       } else {
         document.querySelector('#attRecordEmpty').style.display = 'none';
-        document.querySelector('#attRecordRows').innerHTML = data.records.map(r => `<tr>
+        document.querySelector('#attRecordRows').innerHTML = data.records.map((r, i) => `<tr>
+          <td>${i + 1}</td>
           <td>${formatDate(r.date)}</td>
           <td><strong>${r.day || '—'}</strong></td>
           <td>${r.time}</td>
