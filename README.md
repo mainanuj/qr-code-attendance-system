@@ -1,122 +1,183 @@
 # QR Code Attendance System
 
-Full-stack QR attendance system using a browser frontend, Node.js/Express backend, and MySQL database.
+A full-stack attendance system built with **React**, **Node.js/Express**, and **MySQL**. Teachers manage their own students and class settings, while students can mark attendance from a public QR scanner page.
+
+## Technology used
+
+- Frontend: React + Vite
+- Backend: Node.js + Express
+- Database: MySQL
+- QR scanning: Browser camera + `jsQR`
+- Authentication: JWT teacher login
 
 ## Project structure
 
 ```text
 qr code attendance system/
 │
-├── frontend/                         # Browser UI
-│   ├── index.html                    # Dashboard and pages
-│   ├── app.js                        # UI, local-preview fallback
-│   ├── backend-client.js             # Connects UI actions to Express APIs
-│   ├── scanner.js                    # Webcam QR scanner
-│   ├── styles.css, modal.css          # Styling
-│   └── modal.js                       # Student form validation
-│
-├── backend/                          # Node.js API server
+├── frontend-react/                 # Active React frontend
 │   ├── src/
-│   │   ├── server.js                 # Express routes and static frontend hosting
-│   │   └── db.js                     # MySQL connection pool
-│   ├── sql/schema.sql                # Creates database and tables
-│   ├── .env.example                  # Database configuration template
-│   ├── package.json
-│   └── node_modules/                 # Installed backend packages (ignored by Git)
+│   │   ├── components/             # Pages and reusable UI components
+│   │   ├── api/client.js           # Calls backend APIs
+│   │   ├── hooks/                  # Camera scanner and theme hooks
+│   │   └── styles/                 # Light/dark theme styles
+│   ├── dist/                       # React production build (generated)
+│   └── package.json
 │
-├── .gitignore
+├── backend/                        # Node.js + Express server
+│   ├── src/server.js               # APIs and React static hosting
+│   ├── src/db.js                   # MySQL connection pool
+│   ├── src/migrate-auth.js         # Teacher/login database migration
+│   ├── sql/schema.sql              # Database tables
+│   ├── .env.example                # Environment variable template
+│   └── package.json
+│
+├── run-attendance.bat              # Starts backend on Windows
 └── README.md
 ```
 
 ## How it works
 
 ```text
-Laptop browser → Express backend (localhost:5000) → MySQL (localhost:3306)
+Browser → Express server (localhost:5000) → MySQL database (localhost:3306)
 ```
 
-The same Express server serves the frontend and exposes APIs. When the backend is running, student creation, deletion, QR check-in, and attendance records are saved in MySQL. The old browser `localStorage` behavior remains only as a fallback when using the static preview without the backend.
+The Express server serves the compiled React app and its API from the same address. All student, attendance, teacher, timing, and session data is stored in MySQL.
 
-## Database tables
+## Features
 
-- `students`: name, roll number, course, unique QR token
-- `attendance`: student ID, attendance date, check-in time, Present/Late status
+- Public QR scanner page without login
+- Teacher login with separate private dashboards
+- Student add, edit, delete, search, filter, and QR card generation
+- CSV and Excel student import
+- Attendance log with Present, Late, and Absent status
+- Per-student attendance history
+- Attendance CSV export
+- Class settings: course, academic session, year, semester
+- Attendance time rules: Start → Present Until → End
+- Light and dark mode
 
-The database prevents one student from being marked more than once on the same day.
+## First-time setup
 
-## First-time local setup
+### 1. Create the environment file
 
-Node.js and MySQL are already installed on this laptop. MySQL needs its root password before the schema can be created.
+```powershell
+Copy-Item .\backend\.env.example .\backend\.env
+```
 
-1. Create the backend environment file:
+Open `backend/.env` and enter your MySQL password:
 
-   ```powershell
-   Copy-Item .\backend\.env.example .\backend\.env
-   ```
+```env
+DB_PASSWORD=your_mysql_password
+JWT_SECRET=use_a_long_random_private_value_here
+```
 
-2. Open `backend/.env` and set `DB_PASSWORD` to the MySQL root password.
+Do not upload `.env` to GitHub.
 
-3. Create the database and tables. This asks for the same password:
+### 2. Create the database tables
 
-   ```powershell
-   mysql -u root -p < .\backend\sql\schema.sql
-   ```
+Run this from the main project folder. MySQL will ask for your MySQL root password.
 
-4. Start the full app:
+```powershell
+mysql -u root -p < .\backend\sql\schema.sql
+```
 
-   ```powershell
-   cd .\backend
-   npm.cmd start
-   ```
+### 3. Run the teacher/login migration
 
-5. Open [http://localhost:5000](http://localhost:5000).
-
-For automatic restart while developing, use `npm.cmd run dev` instead.
-
-## API endpoints
-
-- `GET /api/health`
-- `GET /api/students`
-- `POST /api/students`
-- `DELETE /api/students/:id`
-- `GET /api/attendance`
-- `POST /api/attendance/check-in`
-
-## Teacher login and separate dashboards
-
-Teacher login is included. Each teacher registers with a name, unique username, email, and password; login uses the username and password. After login, teachers can see only their own students and attendance records. The first teacher account created automatically receives the existing student data. Every teacher created after that starts with a private empty roster.
-
-After updating the project, run this migration once:
+This creates or updates the teacher, username, section, and class-settings tables.
 
 ```powershell
 cd .\backend
 npm.cmd run migrate
 ```
 
-Also add a long random `JWT_SECRET` line to `backend/.env` before deployment:
+### 4. Install packages
 
-```env
-JWT_SECRET=use_a_long_random_private_value_here
+Only needed on a new laptop or after cloning from GitHub:
+
+```powershell
+cd .\backend
+npm.cmd install
+cd ..\frontend-react
+npm.cmd install
 ```
 
-Do not upload `backend/.env` to GitHub.
+### 5. Build the React frontend
 
-## Class attendance timing
+```powershell
+cd .\frontend-react
+npm.cmd run build
+```
 
-Each teacher configures attendance timing separately for every course in **Class settings**. The backend uses server time, never a status sent by the browser:
+### 6. Start the application
 
-- Before **Attendance Start**: scan is rejected
-- Start through **Present Until**: `Present`
-- Present Until through **Attendance End**: `Late`
-- After **Attendance End**: scan is rejected
+```powershell
+cd ..\backend
+npm.cmd start
+```
 
-The server accepts settings only when `Start < Present Until < End`.
+Open [http://localhost:5000](http://localhost:5000).
 
-## Bulk student import
+## Daily use
 
-On the **Students** page, use **Import students** to upload a `.csv` or `.xlsx` file (maximum 5 MB). The import maps columns by header name, so their order does not matter. The required headers are:
+1. Open `http://localhost:5000` for the public QR scanner.
+2. Use **Teacher login** to open the private dashboard.
+3. Add/import students and configure class timings in **Class settings**.
+4. From the public scanner, a logged-in teacher can click **Start Today’s Class**.
+5. Students scan their QR cards. The server decides whether the scan is Present, Late, or rejected.
+
+## Attendance timing rules
+
+The frontend never sends an attendance status. The backend calculates it using server time.
+
+- Before Attendance Start: scan is rejected
+- Attendance Start to Present Until: `Present`
+- Present Until to Attendance End: `Late`
+- After Attendance End: scan is rejected
+
+The backend accepts a timing configuration only when:
+
+```text
+Start Time < Present Until < Attendance End Time
+```
+
+## Student import format
+
+Students can be imported from `.csv` or `.xlsx` files. Column order does not matter, but these headers are required:
 
 ```text
 Roll Number, Name, Course, Section
 ```
 
-The import creates normal student records with QR tokens, skips duplicate roll numbers, validates missing fields, and displays Imported, Duplicates, and Errors counts after completion.
+Duplicate roll numbers are skipped. Each new imported student receives a normal secure QR token.
+
+## Development mode
+
+For automatic React refresh while changing UI code, keep the backend running in one terminal:
+
+```powershell
+cd .\backend
+npm.cmd run dev
+```
+
+Then, in a second terminal:
+
+```powershell
+cd .\frontend-react
+npm.cmd run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). The Vite server forwards API requests to the backend at port 5000.
+
+For normal usage, always use `http://localhost:5000`.
+
+## Build after frontend changes
+
+Whenever a React file is changed, create a new production build:
+
+```powershell
+cd .\frontend-react
+npm.cmd run build
+```
+
+Then refresh the browser with `Ctrl + Shift + R`.

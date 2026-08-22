@@ -1,3 +1,5 @@
 backend/node_modules/
+frontend-react/node_modules/
+frontend-react/dist/
 backend/.env
 npm-debug.log*

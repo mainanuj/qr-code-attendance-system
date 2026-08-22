@@ -1,0 +1,29 @@
+@import "./legacy/styles.css";
+@import "./legacy/modal.css";
+@import "./legacy/import.css";
+@import "./legacy/import-dialog.css";
+@import "./legacy/auth.css";
+@import "./legacy/settings.css";
+@import "./legacy/dashboard-session.css";
+@import "./legacy/attendance.css";
+@import "./legacy/admin-modern.css";
+@import "./legacy/responsive.css";
+@import "./legacy/public.css";
+@import "./legacy/soft-3d.css";
+@import "./legacy/modal-glass.css";
+@import "./legacy/qr-modal-glass.css";
+@import "./legacy/auth-glass.css";
+@import "./legacy/theme-toggle.css";
+@import "./legacy/click-animation.css";
+@import "./react-popups.css";
+
+.react-app .app-shell { min-height: 100vh; }
+.react-app .view { display: block; }
+.react-app .react-hidden { display: none !important; }
+.react-app .auth-screen { display: grid; }
+.react-app .student-page-actions { display: flex; gap: 10px; }
+.react-app .modal-form { padding: 28px; }
+.react-app .table-actions { white-space: nowrap; }
+.react-app .attendance-summary { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 900px) { .react-app .attendance-summary { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .react-app .attendance-summary { grid-template-columns: 1fr; } .react-app .student-page-actions { width: 100%; } }

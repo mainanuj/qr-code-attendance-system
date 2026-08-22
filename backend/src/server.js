@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
@@ -17,15 +18,22 @@ const port = Number(process.env.PORT || 5000);
 const jwtSecret = process.env.JWT_SECRET || 'local-development-secret-change-before-deploying';
 if (!process.env.JWT_SECRET) console.warn('JWT_SECRET is not set. Add one to backend/.env before deployment.');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const frontendPath = path.resolve(__dirname, '../../frontend');
+// Set FRONTEND_UI=legacy to inspect the original HTML dashboard with the same
+// login and MySQL database. Without it, use the compiled React UI when ready.
+const reactFrontendPath = path.resolve(__dirname, '../../frontend-react/dist');
+const legacyFrontendPath = path.resolve(__dirname, '../../frontend');
+const requestedFrontend = String(process.env.FRONTEND_UI || '').trim().toLowerCase();
+const useLegacyFrontend = requestedFrontend === 'legacy' || !fs.existsSync(path.join(reactFrontendPath, 'index.html'));
+const frontendPath = useLegacyFrontend ? legacyFrontendPath : reactFrontendPath;
 const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 app.use(cors());
 app.use(express.json());
 
 const studentFields = 'id, name, roll_number AS roll, course, section, qr_token AS token, created_at AS createdAt';
-const attendanceFields = `a.id, a.student_id AS studentId, DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS date,
-  TIME_FORMAT(a.check_in_time, '%h:%i %p') AS time, a.status, s.section AS section, UNIX_TIMESTAMP(a.created_at) * 1000 AS createdAt`;
+const attendanceFields = `a.id, a.student_id AS studentId, s.name AS name, s.roll_number AS roll, s.course AS course,
+  DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS date, TIME_FORMAT(a.check_in_time, '%h:%i %p') AS time,
+  a.status, s.section AS section, UNIX_TIMESTAMP(a.created_at) * 1000 AS createdAt`;
 
 function makeToken() { return `ATD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
 function validText(value, limit) { return typeof value === 'string' && value.trim() && value.trim().length <= limit; }
@@ -527,6 +535,9 @@ app.get('/api/attendance', async (request, response, next) => {
       const [dateRows] = await pool.execute(`SELECT
         COALESCE(a.id, CONCAT('absent-', s.id, '-', ?)) AS id,
         s.id AS studentId,
+        s.name AS name,
+        s.roll_number AS roll,
+        s.course AS course,
         ? AS date,
         COALESCE(TIME_FORMAT(a.check_in_time, '%h:%i %p'), '—') AS time,
         COALESCE(a.status, 'Absent') AS status,
@@ -587,6 +598,7 @@ app.use((error, _request, response, _next) => {
 });
 
 app.listen(port, async () => {
-  try { await verifyDatabase(); console.log(`Database connected. App: http://localhost:${port}`); }
+  const ui = frontendPath === reactFrontendPath ? 'React' : 'legacy browser';
+  try { await verifyDatabase(); console.log(`Database connected. ${ui} app: http://localhost:${port}`); }
   catch { console.log(`Server started at http://localhost:${port}, but MySQL is not connected yet.`); }
 });

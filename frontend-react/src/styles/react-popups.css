@@ -1,0 +1,8 @@
+/* React keeps the original project's native dialog behaviour and field order. */
+#studentModal .old-popup-fields { grid-template-columns: 1fr !important; gap: 0 !important; }
+#studentModal .old-popup-fields label { display: block; }
+#studentModal .old-popup-fields input { width: 100%; }
+
+body.authenticated:not(.light-theme) #studentModal .old-popup-fields label { color: #b8c7e3 !important; }
+body.authenticated:not(.light-theme) #studentModal .old-popup-fields input { background: #071026 !important; color: #eaf1ff !important; border-color: #8294be4a !important; }
+body.authenticated:not(.light-theme) #studentModal .form-error:not(:empty) { background: #4a1f2a; color: #ffc4c8; }
