@@ -94,7 +94,14 @@ app.get('/api/public/session-status', async (_request, response, next) => {
   try {
     const [rows] = await pool.query(`SELECT id, teacher_id AS teacherId, course, section, DATE_FORMAT(session_date, '%Y-%m-%d') AS date, status
       FROM daily_class_sessions WHERE session_date = CURDATE() AND status = 'Active'`);
-    response.json({ active: rows.length > 0, sessions: rows });
+    const token = _request.headers.authorization?.replace(/^Bearer\s+/i, '');
+    let teacherId = null;
+    try { if (token) teacherId = jwt.verify(token, jwtSecret).teacherId; } catch { /* Public status remains available without a valid login. */ }
+    response.json({
+      active: rows.length > 0,
+      teacherActive: teacherId ? rows.some((row) => row.teacherId === teacherId) : null,
+      sessions: rows
+    });
   } catch (error) { next(error); }
 });
 
@@ -108,7 +115,9 @@ app.post('/api/public/check-in', async (request, response, next) => {
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
     
     const [activeSessions] = await pool.execute(`SELECT id FROM daily_class_sessions
-      WHERE session_date = CURDATE() AND course = ? AND status = 'Active' LIMIT 1`, [student.course]);
+      WHERE teacher_id = ? AND session_date = CURDATE() AND course = ?
+        AND (section = ? OR section = 'General') AND status = 'Active' LIMIT 1`,
+    [student.teacherId, student.course, student.section || 'General']);
     if (!activeSessions.length) {
       response.status(409).json({ error: `Today's class session for ${student.course} has not been started yet. Click "Start Today's Class" to begin.` });
       return;

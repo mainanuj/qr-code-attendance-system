@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS daily_class_sessions (
   session_date DATE NOT NULL,
   status ENUM('Active', 'Ended') NOT NULL DEFAULT 'Active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_daily_class_session (session_date, course, section),
+  UNIQUE KEY unique_teacher_daily_class_session (teacher_id, session_date, course, section),
   INDEX idx_session_date (session_date)
 );
-

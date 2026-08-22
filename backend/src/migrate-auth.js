@@ -62,6 +62,17 @@ try {
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`);
 
+  // A class session belongs to one teacher. Older databases used a global
+  // date/course/section key, which prevented a second teacher with the same
+  // course from starting their own class on the same day.
+  const [legacySessionIndex] = await pool.query(`SELECT INDEX_NAME FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'daily_class_sessions' AND INDEX_NAME = 'unique_daily_class_session'`);
+  if (legacySessionIndex.length) await pool.query('ALTER TABLE daily_class_sessions DROP INDEX unique_daily_class_session');
+  const [teacherSessionIndex] = await pool.query(`SELECT INDEX_NAME FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'daily_class_sessions' AND INDEX_NAME = 'unique_teacher_daily_class_session'`);
+  if (!teacherSessionIndex.length) await pool.query(`CREATE UNIQUE INDEX unique_teacher_daily_class_session
+    ON daily_class_sessions (teacher_id, session_date, course, section)`);
+
   console.log('Teacher username, dashboard session, section, and attendance timing migration completed.');
 } catch (error) {
   console.error('Migration failed:', error.message);
