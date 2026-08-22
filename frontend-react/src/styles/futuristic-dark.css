@@ -1,1 +1,19 @@
 @import "./legacy/futuristic-modern.css";
+
+/* Keep the attendance-rule chips readable in dark mode. */
+body.authenticated:not(.light-theme) .settings-info {
+  background: #13224a !important;
+  border-color: #6680e05a !important;
+  color: #e7edff !important;
+}
+
+body.authenticated:not(.light-theme) .settings-info strong {
+  color: #f1f5ff !important;
+}
+
+body.authenticated:not(.light-theme) .settings-info span {
+  color: #cbd7ff !important;
+  background: #071026 !important;
+  border: 1px solid #8294be52 !important;
+  box-shadow: inset 0 1px 0 #ffffff0a !important;
+}
