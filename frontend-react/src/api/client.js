@@ -1,4 +1,7 @@
 const SESSION_KEY = 'attendly-session';
+// Empty locally: requests stay relative (/api/...) and Vite proxies them to
+// localhost:5000. Vercel supplies VITE_API_URL for the Render API origin.
+const apiOrigin = String(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 export function getSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
@@ -11,7 +14,7 @@ export function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
 export async function request(path, options = {}) {
   const session = getSession();
   const formData = options.body instanceof FormData;
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${apiOrigin}/api${path}`, {
     ...options,
     headers: {
       ...(formData ? {} : { 'Content-Type': 'application/json' }),
