@@ -34,9 +34,32 @@ function validText(value, limit) { return typeof value === 'string' && value.tri
 function validUsername(value) { return typeof value === 'string' && /^[a-z0-9_.-]{3,40}$/i.test(value.trim()); }
 function isValidTime(value) { return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value); }
 function timeToSeconds(value) { const [hours, minutes, seconds = 0] = value.split(':').map(Number); return hours * 3600 + minutes * 60 + seconds; }
-function serverTime() { const now = new Date(); return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds(); }
-function calculateAttendanceStatus(setting) {
-  const now = serverTime();
+const attendanceClock = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Kolkata',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23'
+});
+
+function attendanceNow(now = new Date()) {
+  const parts = Object.fromEntries(
+    attendanceClock.formatToParts(now)
+      .filter(({ type }) => ['year', 'month', 'day', 'hour', 'minute', 'second'].includes(type))
+      .map(({ type, value }) => [type, Number(value)])
+  );
+  const pad = (value) => String(value).padStart(2, '0');
+  return {
+    date: `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`,
+    time: `${pad(parts.hour)}:${pad(parts.minute)}:${pad(parts.second)}`,
+    seconds: parts.hour * 3600 + parts.minute * 60 + parts.second
+  };
+}
+
+function calculateAttendanceStatus(setting, now = attendanceNow().seconds) {
   const start = timeToSeconds(setting.startTime);
   const presentUntil = timeToSeconds(setting.presentUntil);
   const end = timeToSeconds(setting.endTime);
@@ -66,12 +89,13 @@ app.get('/api/health', async (_request, response) => {
 
 app.get('/api/public/summary', async (_request, response, next) => {
   try {
+    const now = attendanceNow();
     const [[studentCount]] = await pool.query('SELECT COUNT(*) AS totalStudents FROM students');
     const [[todayStats]] = await pool.query(`SELECT
       COUNT(*) AS checkedIn,
       SUM(status = 'Present') AS presentToday,
       SUM(status = 'Late') AS lateCheckins
-      FROM attendance WHERE attendance_date = CURDATE()`);
+      FROM attendance WHERE attendance_date = ?`, [now.date]);
     const totalStudents = Number(studentCount.totalStudents || 0);
     const checkedIn = Number(todayStats.checkedIn || 0);
     response.json({
@@ -86,8 +110,9 @@ app.get('/api/public/summary', async (_request, response, next) => {
 
 app.get('/api/public/session-status', async (_request, response, next) => {
   try {
+    const now = attendanceNow();
     const [rows] = await pool.query(`SELECT id, teacher_id AS teacherId, course, section, DATE_FORMAT(session_date, '%Y-%m-%d') AS date, status
-      FROM daily_class_sessions WHERE session_date = CURDATE() AND status = 'Active'`);
+      FROM daily_class_sessions WHERE session_date = ? AND status = 'Active'`, [now.date]);
     const token = _request.headers.authorization?.replace(/^Bearer\s+/i, '');
     let teacherId = null;
     try { if (token) teacherId = jwt.verify(token, jwtSecret).teacherId; } catch { /* Public status remains available without a valid login. */ }
@@ -103,15 +128,16 @@ app.post('/api/public/check-in', async (request, response, next) => {
   const code = String(request.body?.code || '').trim();
   if (!code) { response.status(400).json({ error: 'QR token or roll number is required.' }); return; }
   try {
+    const now = attendanceNow();
     const [students] = await pool.execute(`SELECT teacher_id AS teacherId, ${studentFields}
       FROM students WHERE qr_token = ? OR roll_number = ? LIMIT 1`, [code, code]);
     const student = students[0];
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
     
     const [activeSessions] = await pool.execute(`SELECT id FROM daily_class_sessions
-      WHERE teacher_id = ? AND session_date = CURDATE() AND course = ?
+      WHERE teacher_id = ? AND session_date = ? AND course = ?
         AND (section = ? OR section = 'General') AND status = 'Active' LIMIT 1`,
-    [student.teacherId, student.course, student.section || 'General']);
+    [student.teacherId, now.date, student.course, student.section || 'General']);
     if (!activeSessions.length) {
       response.status(409).json({ error: `Today's class session for ${student.course} has not been started yet. Click "Start Today's Class" to begin.` });
       return;
@@ -121,10 +147,10 @@ app.post('/api/public/check-in', async (request, response, next) => {
       TIME_FORMAT(present_until, '%H:%i:%s') AS presentUntil, TIME_FORMAT(end_time, '%H:%i:%s') AS endTime
       FROM class_attendance_settings WHERE teacher_id = ? AND course = ? LIMIT 1`, [student.teacherId, student.course]);
     if (!settings.length) { response.status(409).json({ error: `Attendance timing is not configured for ${student.course}.` }); return; }
-    const timing = calculateAttendanceStatus(settings[0]);
+    const timing = calculateAttendanceStatus(settings[0], now.seconds);
     if (!timing.allowed) { response.status(409).json({ error: timing.error }); return; }
     const record = { id: crypto.randomUUID(), studentId: student.id, status: timing.status };
-    await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, CURDATE(), CURTIME(), ?)', [record.id, record.studentId, record.status]);
+    await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, ?, ?, ?)', [record.id, record.studentId, now.date, now.time, record.status]);
     const [records] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a JOIN students s ON s.id = a.student_id WHERE a.id = ?`, [record.id]);
     Object.assign(record, records[0]);
     response.status(201).json({ record, student: { name: student.name, course: student.course, section: student.section } });
@@ -247,6 +273,7 @@ app.put('/api/classes/attendance-settings', async (request, response, next) => {
 
 app.post('/api/classes/start-session', async (request, response, next) => {
   try {
+    const now = attendanceNow();
     const teacherId = request.teacher.teacherId;
     let course = String(request.body?.course || '').trim();
     let section = String(request.body?.section || '').trim();
@@ -266,12 +293,12 @@ app.post('/api/classes/start-session', async (request, response, next) => {
 
     for (const target of targetCourses) {
       await pool.execute(`INSERT INTO daily_class_sessions (id, teacher_id, course, section, session_date, status)
-        VALUES (?, ?, ?, ?, CURDATE(), 'Active')
-        ON DUPLICATE KEY UPDATE status = 'Active'`, [crypto.randomUUID(), teacherId, target.course, target.section || 'General']);
+        VALUES (?, ?, ?, ?, ?, 'Active')
+        ON DUPLICATE KEY UPDATE status = 'Active'`, [crypto.randomUUID(), teacherId, target.course, target.section || 'General', now.date]);
     }
 
     const [sessions] = await pool.execute(`SELECT id, teacher_id AS teacherId, course, section, DATE_FORMAT(session_date, '%Y-%m-%d') AS date, status
-      FROM daily_class_sessions WHERE session_date = CURDATE() AND teacher_id = ?`, [teacherId]);
+      FROM daily_class_sessions WHERE session_date = ? AND teacher_id = ?`, [now.date, teacherId]);
 
     response.json({ ok: true, message: "Today's class session started successfully!", sessions });
   } catch (error) { next(error); }
@@ -571,6 +598,7 @@ app.post('/api/attendance/check-in', async (request, response, next) => {
   const code = String(request.body?.code || '').trim();
   if (!code) { response.status(400).json({ error: 'QR token or roll number is required.' }); return; }
   try {
+    const now = attendanceNow();
     const [students] = await pool.execute(`SELECT ${studentFields} FROM students WHERE teacher_id = ? AND (qr_token = ? OR roll_number = ?) LIMIT 1`, [request.teacher.teacherId, code, code]);
     const student = students[0];
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
@@ -578,10 +606,10 @@ app.post('/api/attendance/check-in', async (request, response, next) => {
       TIME_FORMAT(present_until, '%H:%i:%s') AS presentUntil, TIME_FORMAT(end_time, '%H:%i:%s') AS endTime
       FROM class_attendance_settings WHERE teacher_id = ? AND course = ? LIMIT 1`, [request.teacher.teacherId, student.course]);
     if (!settings.length) { response.status(409).json({ error: `Attendance timing is not configured for ${student.course}.` }); return; }
-    const timing = calculateAttendanceStatus(settings[0]);
+    const timing = calculateAttendanceStatus(settings[0], now.seconds);
     if (!timing.allowed) { response.status(409).json({ error: timing.error }); return; }
     const record = { id: crypto.randomUUID(), studentId: student.id, status: timing.status };
-    await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, CURDATE(), CURTIME(), ?)', [record.id, record.studentId, record.status]);
+    await pool.execute('INSERT INTO attendance (id, student_id, attendance_date, check_in_time, status) VALUES (?, ?, ?, ?, ?)', [record.id, record.studentId, now.date, now.time, record.status]);
     const [records] = await pool.execute(`SELECT ${attendanceFields} FROM attendance a JOIN students s ON s.id = a.student_id WHERE a.id = ?`, [record.id]);
     Object.assign(record, records[0]);
     response.status(201).json({ record, student });
