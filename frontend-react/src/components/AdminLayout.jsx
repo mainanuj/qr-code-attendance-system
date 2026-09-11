@@ -47,8 +47,8 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
   };
 
   return <div className="app-shell">
-    <aside className="sidebar" aria-label="Main navigation"><a className="brand" href="#dashboard"><span className="brand-mark">A</span><span>attendly</span></a><nav className="nav-links">{nav.map(([id, icon, label]) => <button key={id} type="button" className={`nav-link ${view === id ? 'active' : ''}`} onClick={() => navigate(id)}><span>{icon}</span> {label}</button>)}</nav><div className="sidebar-bottom"><div className="teacher-card"><span className="avatar">{initials(session.teacher.name)}</span><div><strong>{session.teacher.name}</strong><small>Instructor</small></div></div><button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button></div></aside>
-    <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={openPublicScanner}>Public scanner <span>↗</span></button></div></header>
+    <aside className="sidebar" aria-label="Main navigation"><a className="brand" href="#dashboard"><span className="brand-mark">A</span><span>attendly</span></a><nav className="nav-links">{nav.map(([id, icon, label]) => <button key={id} type="button" className={`nav-link ${view === id ? 'active' : ''}`} aria-current={view === id ? 'page' : undefined} onClick={() => navigate(id)}><span>{icon}</span> {label}</button>)}</nav><div className="sidebar-bottom"><div className="teacher-card"><span className="avatar">{initials(session.teacher.name)}</span><div><strong>{session.teacher.name}</strong><small>Instructor</small></div></div><button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button></div></aside>
+    <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={openPublicScanner}>Public scanner <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
       {loading ? <div className="empty-state"><h3>Loading dashboard…</h3></div> : <>
         {view === 'dashboard' && <Dashboard dashboard={dashboard} students={students} attendance={attendance} rate={rate} present={present} late={late} navigate={navigate} startTodayClass={startTodayClass} startingSession={startingSession} sessionActive={sessionActive} />}
         {view === 'students' && <StudentsView students={students} setStudents={setStudents} reload={reload} toast={toast} />}
@@ -57,6 +57,7 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
         {view === 'settings' && <SettingsView dashboard={dashboard} setDashboard={setDashboard} timings={timings} setTimings={setTimings} toast={toast} />}
       </>}
     </main>
+    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">{nav.map(([id, icon, label]) => <button key={id} type="button" className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => navigate(id)}><span aria-hidden="true">{icon}</span><small>{label === 'Attendance Records' ? 'Records' : label}</small></button>)}</nav>
   </div>;
 }
 

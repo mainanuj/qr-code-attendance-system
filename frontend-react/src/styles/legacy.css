@@ -16,6 +16,7 @@
 @import "./legacy/theme-toggle.css";
 @import "./legacy/click-animation.css";
 @import "./react-popups.css";
+@import "./mobile-responsive.css";
 
 .react-app .app-shell { min-height: 100vh; }
 .react-app .view { display: block; }

@@ -1,0 +1,154 @@
+/* Mobile-only layout. These rules deliberately start below the desktop breakpoint. */
+.mobile-bottom-nav,.mobile-logout{display:none}
+
+@media (max-width:768px){
+  html{overflow-x:hidden}
+  body{min-width:0;overflow-x:hidden}
+  .react-app{min-width:0;overflow-x:hidden}
+  .authenticated .app-shell{display:block;min-height:100dvh}
+  .authenticated .sidebar{display:none}
+  .authenticated .main-content{
+    width:100%;margin:0;padding:calc(20px + env(safe-area-inset-top)) 16px calc(94px + env(safe-area-inset-bottom));
+    max-width:none;min-width:0;
+  }
+  .authenticated .topbar{align-items:flex-start;gap:14px;margin-bottom:25px}
+  .authenticated .topbar>div:first-child{min-width:0;flex:1}
+  .authenticated .topbar h1{font-size:clamp(21px,6vw,27px);line-height:1.18;overflow-wrap:anywhere}
+  .authenticated .topbar .eyebrow{margin-bottom:7px}
+  .authenticated .top-actions{gap:7px;flex-shrink:0}
+  .authenticated .top-actions .icon-button,.authenticated .top-actions .scan-nav{display:none!important}
+  .authenticated .theme-toggle{min-height:42px;padding:0 11px;font-size:11px;white-space:nowrap}
+  .authenticated .mobile-logout{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font:700 11px Manrope;cursor:pointer}
+  .mobile-bottom-nav{
+    position:fixed;z-index:30;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+    min-height:70px;padding:7px max(8px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+    border-top:1px solid var(--line);background:color-mix(in srgb,var(--canvas) 92%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 -8px 26px #08112616;
+  }
+  .mobile-bottom-nav button{display:grid;place-items:center;gap:3px;min-width:0;border:0;border-radius:10px;background:transparent;color:var(--muted);font:600 9px Manrope;line-height:1.05;cursor:pointer}
+  .mobile-bottom-nav button span{font-size:18px;line-height:1}
+  .mobile-bottom-nav button small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit}
+  .mobile-bottom-nav button.active{color:var(--violet);background:#5362e814}
+
+  .authenticated .hero-grid,.authenticated .content-grid,.authenticated .scanner-layout{grid-template-columns:minmax(0,1fr);gap:15px}
+  .authenticated .hero-grid{gap:15px}
+  .authenticated .welcome-card{height:auto;min-height:205px;padding:23px;align-items:flex-start}
+  .authenticated .welcome-card h2{font-size:clamp(22px,7vw,28px);line-height:1.2;max-width:calc(100% - 92px);overflow-wrap:anywhere}
+  .authenticated .welcome-card .muted{max-width:calc(100% - 92px)}
+  .authenticated .welcome-card .orbital{display:block;position:absolute;right:-52px;top:14px;transform:scale(.7);transform-origin:top right;opacity:.7}
+  .authenticated .welcome-card .secondary-btn{min-height:44px;margin-top:13px}
+  .authenticated .quick-card,.authenticated .stat-card,.authenticated .panel,.authenticated .scanner-card,.authenticated .manual-card,.authenticated .class-setting-card{min-width:0}
+  .authenticated .quick-card{padding:21px}
+  .authenticated .quick-card strong{font-size:35px;margin-top:16px}
+  .authenticated .stat-grid,.react-app .attendance-summary{grid-template-columns:minmax(0,1fr)!important;gap:12px;margin:15px 0}
+  .authenticated .stat-card{min-height:76px;padding:16px}
+  .authenticated .stat-trend{right:13px;top:16px;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .authenticated .recent-panel,.authenticated .code-panel{padding:20px}
+  .authenticated .code-panel{min-height:190px}
+  .authenticated .checkin-row{gap:8px;min-width:0}
+  .authenticated .checkin-main{min-width:0}
+  .authenticated .checkin-main strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .authenticated .checkin-time{display:none}
+  .authenticated .status{flex:0 0 auto}
+  .authenticated .page-heading{flex-direction:column;align-items:stretch;gap:14px;margin-bottom:19px}
+  .authenticated .page-heading h2{font-size:clamp(23px,7vw,29px);line-height:1.18;overflow-wrap:anywhere}
+  .authenticated .page-heading .muted{line-height:1.55}
+  .authenticated .page-heading>.primary-btn{align-self:stretch;min-height:46px}
+  .react-app .student-page-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .react-app .student-page-actions button{width:100%;min-height:46px;padding:10px 8px}
+
+  .authenticated .toolbar,.authenticated .toolbar.att-record-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;overflow:visible;max-width:none;margin-bottom:16px;padding:0;border:0;background:transparent}
+  .authenticated .toolbar>*{width:100%;min-width:0;max-width:none;flex:auto;margin:0!important}
+  .authenticated .toolbar .search-box{order:0;min-width:0;width:100%;min-height:46px}
+  .authenticated .toolbar select,.authenticated .toolbar .field-label input{min-height:46px}
+  .authenticated .toolbar .field-label{width:100%;min-width:0}
+  .authenticated .toolbar .outline-btn,.authenticated .toolbar .primary-btn{min-height:46px}
+  .authenticated .table-panel{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  .authenticated .table-panel table{min-width:640px}
+  .authenticated th,.authenticated td{padding:12px 14px;white-space:nowrap}
+  .authenticated .table-panel .empty-state{min-width:0;white-space:normal;position:sticky;left:0;width:100%;padding:40px 18px}
+
+  .authenticated .scanner-card{padding:15px}
+  .authenticated .camera-frame{height:min(68vw,330px);min-height:225px}
+  .authenticated .scan-corners{width:min(52vw,180px);height:min(52vw,180px)}
+  .authenticated .scanner-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .authenticated .scanner-actions button{min-height:47px}
+  .authenticated .manual-card{padding:22px}
+  .authenticated .manual-card input{min-height:47px}
+  .authenticated .manual-card .wide{min-height:47px}
+  .authenticated .live-badge{align-self:flex-start}
+
+  .authenticated .dashboard-session-card{display:block;padding:20px}
+  .authenticated .dashboard-session-form{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:18px}
+  .authenticated .dashboard-session-form .primary-btn{grid-column:auto;justify-self:stretch;min-height:46px}
+  .authenticated .settings-info{align-items:flex-start;padding:14px;line-height:1.4}
+  .authenticated .settings-info strong{width:100%;margin:0 0 3px}
+  .authenticated .settings-info span{font-size:9px;line-height:1.35}
+  .authenticated .class-setting-card{grid-template-columns:minmax(0,1fr);gap:13px;padding:20px}
+  .authenticated .class-setting-course{grid-column:auto}
+  .authenticated .class-setting-card .primary-btn{grid-column:auto;min-height:46px}
+  .authenticated .class-setting-card input{min-height:46px}
+
+  dialog{width:calc(100% - 24px);max-height:calc(100dvh - 24px);overflow:auto;border-radius:20px}
+  dialog form,.qr-modal-content,.react-app .modal-form{padding:22px 18px}
+  .modal-heading h2{font-size:23px;line-height:1.2}
+  .form-intro{line-height:1.55}
+  .form-grid,#studentModal .old-popup-fields{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+  .form-grid input,#studentModal .old-popup-fields input{min-height:46px}
+  .modal-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:9px;margin-top:20px}
+  .modal-actions button{min-height:47px;padding:10px 8px}
+  .import-guide{line-height:1.8}
+  .qr-image-wrap{width:min(196px,100%);height:auto;aspect-ratio:1}
+  .toast{right:12px;left:12px;bottom:calc(82px + env(safe-area-inset-bottom));text-align:center}
+
+  .public-landing{min-height:100dvh;overflow-x:hidden}
+  .public-header{height:auto;min-height:68px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));gap:10px}
+  .public-header .brand{font-size:20px;min-width:0;padding-left:0}
+  .public-header-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
+  .public-header .theme-toggle,.public-header .outline-btn{min-height:40px;padding:0 10px;font-size:10px;white-space:nowrap}
+  .public-main{width:calc(100% - 28px);padding:31px 0 calc(36px + env(safe-area-inset-bottom))}
+  .public-heading{margin-bottom:20px}
+  .public-heading h1{font-size:clamp(31px,10vw,42px);line-height:1.08;letter-spacing:-1.7px;overflow-wrap:anywhere}
+  .public-scanner,.public-hero-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+  .public-scanner{padding:19px 16px;border-radius:20px}
+  .public-scanner-copy h2{font-size:25px}
+  .public-scanner-copy>p:not(.eyebrow){font-size:12px;line-height:1.65}
+  .public-live-class-badge{max-width:100%;font-size:11px;padding:9px 12px}
+  .public-scanner .scanner-actions{display:grid;grid-template-columns:1fr 1fr;margin-top:18px}
+  .public-scanner .scanner-actions button,.public-scanner .secondary-btn{min-height:47px}
+  .public-manual-label input{min-height:47px;font-size:14px}
+  .public-camera-frame{height:min(78vw,360px);min-height:238px;border-radius:14px;order:-1}
+  .public-camera-frame .scan-corners{width:min(50vw,180px);height:min(50vw,180px)}
+  .public-session-card{min-height:205px;padding:24px 20px}
+  .public-session-card h2{font-size:24px;max-width:65%;overflow-wrap:anywhere}
+  .public-orbit{right:-17px;top:28px;transform:scale(.75);transform-origin:top right}
+  .public-rate-card{padding:22px 20px}
+  .public-rate-card strong{font-size:38px;margin-top:20px}
+
+  .auth-screen{min-height:100dvh}
+  .auth-panel{width:calc(100% - 28px)!important;margin:24px auto!important;padding:28px 20px!important}
+  .auth-brand{margin-bottom:30px!important}
+  .auth-copy h1{font-size:clamp(27px,9vw,33px)!important;line-height:1.16}
+  .auth-form input{min-height:48px}
+  .auth-form .primary-btn{min-height:50px}
+}
+
+@media (max-width:390px){
+  .authenticated .main-content{padding-left:12px;padding-right:12px}
+  .authenticated .topbar{gap:8px}
+  .authenticated .top-actions{gap:5px}
+  .authenticated .theme-toggle{padding:0 8px;font-size:10px}
+  .authenticated .mobile-logout{padding:0 8px;font-size:10px}
+  .mobile-bottom-nav{padding-left:4px;padding-right:4px}
+  .mobile-bottom-nav button{font-size:8px}
+  .mobile-bottom-nav button span{font-size:17px}
+  .react-app .student-page-actions{grid-template-columns:minmax(0,1fr)}
+  .public-header .brand span:last-child{display:none}
+  .public-header .theme-toggle,.public-header .outline-btn{padding:0 8px;font-size:9px}
+  .public-heading h1{font-size:30px}
+  .public-scan-confirmation span{width:64px;height:64px;font-size:35px}
+  .public-scan-confirmation strong{font-size:11px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mobile-bottom-nav,.mobile-bottom-nav button{scroll-behavior:auto}
+}
