@@ -7,7 +7,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
-import { pool, verifyDatabase } from './db.js';
+import { databaseFailureDetails, pool, verifyDatabase } from './db.js';
 
 dotenv.config();
 
@@ -599,5 +599,8 @@ app.use((error, _request, response, _next) => {
 
 app.listen(port, async () => {
   try { await verifyDatabase(); console.log(`Database connected. API server listening on port ${port}.`); }
-  catch { console.log(`API server listening on port ${port}, but MySQL is not connected yet.`); }
+  catch (error) {
+    console.error('Database connection failed at startup:', databaseFailureDetails(error));
+    console.log(`API server listening on port ${port}, but MySQL is not connected yet.`);
+  }
 });

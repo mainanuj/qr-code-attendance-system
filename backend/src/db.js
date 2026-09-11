@@ -1,15 +1,42 @@
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
-const useSsl = ['1', 'true', 'yes', 'required'].includes(String(process.env.DB_SSL || '').trim().toLowerCase());
+const dbHost = process.env.DB_HOST || '127.0.0.1';
+const dbPort = Number(process.env.DB_PORT || 3306);
+const dbName = process.env.DB_NAME || 'qr_attendance';
+const dbSslRequested = ['1', 'true', 'yes', 'required'].includes(String(process.env.DB_SSL || '').trim().toLowerCase());
+const isTiDBCloudHost = /(^|\.)tidbcloud\.com$/i.test(dbHost);
+const useSsl = dbSslRequested || isTiDBCloudHost;
 const sslCa = String(process.env.DB_SSL_CA || '').replace(/\\n/g, '\n').trim();
 
+function safeErrorMessage(error) {
+  return String(error?.message || 'Unknown database error')
+    .replace(/(password\s*[=:]\s*)[^\s,;]+/gi, '$1[redacted]')
+    .replace(/(mysqls?:\/\/[^:\/\s]+:)[^@\/\s]+@/gi, '$1[redacted]@')
+    .slice(0, 1000);
+}
+
+export function databaseFailureDetails(error) {
+  return {
+    code: error?.code || null,
+    errno: error?.errno ?? null,
+    sqlState: error?.sqlState || null,
+    message: safeErrorMessage(error),
+    host: dbHost,
+    port: dbPort,
+    database: dbName,
+    sslEnabled: useSsl,
+    sslAutomaticallyEnabledForTiDB: isTiDBCloudHost,
+    sslCaConfigured: Boolean(sslCa)
+  };
+}
+
 export const pool = mysql.createPool({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT || 3306),
+  host: dbHost,
+  port: dbPort,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'qr_attendance',
+  database: dbName,
   // Local MySQL keeps its current non-SSL connection. Set DB_SSL=true on
   // Render for TiDB Cloud's public endpoint.
   ...(useSsl ? {
