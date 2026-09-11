@@ -15,4 +15,4 @@ start "" http://localhost:5173
 
 echo The backend and frontend opened in separate terminal windows.
 echo To stop the project, press Ctrl+C in both windows and close them.
-pause
+exit /b 0

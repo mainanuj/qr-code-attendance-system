@@ -1,12 +1,24 @@
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
+const useSsl = ['1', 'true', 'yes', 'required'].includes(String(process.env.DB_SSL || '').trim().toLowerCase());
+const sslCa = String(process.env.DB_SSL_CA || '').replace(/\\n/g, '\n').trim();
+
 export const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'qr_attendance',
+  // Local MySQL keeps its current non-SSL connection. Set DB_SSL=true on
+  // Render for TiDB Cloud's public endpoint.
+  ...(useSsl ? {
+    ssl: {
+      minVersion: 'TLSv1.2',
+      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+      ...(sslCa ? { ca: sslCa } : {})
+    }
+  } : {}),
   waitForConnections: true,
   connectionLimit: 10,
   namedPlaceholders: true
