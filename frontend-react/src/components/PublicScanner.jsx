@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useCameraScanner } from '../hooks/useCameraScanner.js';
 import ThemeToggle from './ThemeToggle.jsx';
+import BrandLogo from './BrandLogo.jsx';
 
 export default function PublicScanner({ theme, toggleTheme, openLogin, openDashboard, isTeacherLoggedIn }) {
   const [summary, setSummary] = useState({ attendanceRate: 0, checkedIn: 0, totalStudents: 0 });
@@ -50,7 +51,7 @@ export default function PublicScanner({ theme, toggleTheme, openLogin, openDashb
   const shownResult = error || result || (!active ? 'Attendance is not active yet. Your teacher will start today’s class from the dashboard.' : '');
 
   return <section className="public-landing" id="publicLanding">
-    <header className="public-header"><a className="brand" href="#publicLanding"><span className="brand-mark">A</span><span>attendly</span></a><div className="public-header-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="outline-btn" type="button" onClick={isTeacherLoggedIn ? openDashboard : openLogin}>{isTeacherLoggedIn ? 'Teacher dashboard' : 'Teacher login'}</button></div></header>
+    <header className="public-header"><a className="brand" href="#publicLanding"><span className="brand-mark"><BrandLogo size={32} /></span><span>Attendly</span></a><div className="public-header-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="outline-btn" type="button" onClick={isTeacherLoggedIn ? openDashboard : openLogin}>{isTeacherLoggedIn ? 'Teacher dashboard' : 'Teacher login'}</button></div></header>
     <main className="public-main">
       <div className="public-heading"><p className="eyebrow">QR ATTENDANCE SYSTEM</p><h1>Scan QR to mark attendance</h1></div>
       <section className="public-scanner public-scanner-top" id="publicScanner">

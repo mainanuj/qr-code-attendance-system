@@ -30,3 +30,24 @@
 @media (max-width: 900px) { .react-app .attendance-summary { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 768px) { .authenticated .welcome-card .secondary-btn { margin-top: 18px; } }
 @media (max-width: 620px) { .react-app .attendance-summary { grid-template-columns: 1fr; } .react-app .student-page-actions { width: 100%; } }
+
+.brand-mark {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+.brand-mark .brand-icon {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+}
+.brand:hover .brand-mark .brand-icon {
+  transform: scale(1.08);
+  filter: drop-shadow(0 4px 14px rgba(34, 211, 238, 0.45));
+}
+

@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle.jsx';
 import StudentsView from './StudentsView.jsx';
 import AttendanceView from './AttendanceView.jsx';
 import SettingsView from './SettingsView.jsx';
+import BrandLogo from './BrandLogo.jsx';
 
 const nav = [['dashboard', '▦', 'Overview'], ['students', '♙', 'Students'], ['records', '▤', 'Attendance log'], ['attendance-records', '📋', 'Attendance Records'], ['settings', '◷', 'Class settings']];
 
@@ -47,7 +48,7 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
   };
 
   return <div className="app-shell">
-    <aside className="sidebar" aria-label="Main navigation"><a className="brand" href="#dashboard"><span className="brand-mark">A</span><span>attendly</span></a><nav className="nav-links">{nav.map(([id, icon, label]) => <button key={id} type="button" className={`nav-link ${view === id ? 'active' : ''}`} aria-current={view === id ? 'page' : undefined} onClick={() => navigate(id)}><span>{icon}</span> {label}</button>)}</nav><div className="sidebar-bottom"><div className="teacher-card"><span className="avatar">{initials(session.teacher.name)}</span><div><strong>{session.teacher.name}</strong><small>Instructor</small></div></div><button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button></div></aside>
+    <aside className="sidebar" aria-label="Main navigation"><a className="brand" href="#dashboard"><span className="brand-mark"><BrandLogo size={32} /></span><span>Attendly</span></a><nav className="nav-links">{nav.map(([id, icon, label]) => <button key={id} type="button" className={`nav-link ${view === id ? 'active' : ''}`} aria-current={view === id ? 'page' : undefined} onClick={() => navigate(id)}><span>{icon}</span> {label}</button>)}</nav><div className="sidebar-bottom"><div className="teacher-card"><span className="avatar">{initials(session.teacher.name)}</span><div><strong>{session.teacher.name}</strong><small>Instructor</small></div></div><button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button></div></aside>
     <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={openPublicScanner}>Public scanner <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
       {loading ? <div className="empty-state"><h3>Loading dashboard…</h3></div> : <>
         {view === 'dashboard' && <Dashboard dashboard={dashboard} students={students} attendance={attendance} rate={rate} present={present} late={late} navigate={navigate} startTodayClass={startTodayClass} startingSession={startingSession} sessionActive={sessionActive} />}
