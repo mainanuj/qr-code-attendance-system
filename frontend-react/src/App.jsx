@@ -5,11 +5,10 @@ import { clearSession, getSession, saveSession } from './api/client.js';
 import { useTheme } from './hooks/useTheme.js';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import Toast from './components/Toast.jsx';
-import PublicScanner from './components/PublicScanner.jsx';
 import AuthPage from './components/AuthPage.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 
-const adminPaths = ['/dashboard', '/students', '/attendance', '/attendance-records', '/settings'];
+const adminPaths = ['/dashboard', '/scan', '/students', '/attendance', '/attendance-records', '/settings'];
 
 export default function App() {
   const [session, setSession] = useState(() => getSession());
@@ -36,25 +35,17 @@ export default function App() {
   function handleLogout() {
     clearSession();
     setSession(null);
-    navigate('/');
+    navigate('/login');
     toast('You have been logged out.');
   }
 
   return (
     <div className="react-app">
       <Routes>
-        {/* Public QR Scanner */}
+        {/* Landing redirects to dashboard if authenticated, or login */}
         <Route
           path="/"
-          element={
-            <PublicScanner
-              theme={theme}
-              toggleTheme={toggleTheme}
-              openLogin={() => navigate('/login')}
-              openDashboard={() => navigate('/dashboard')}
-              isTeacherLoggedIn={Boolean(session?.token)}
-            />
-          }
+          element={<Navigate to={session?.token ? "/dashboard" : "/login"} replace />}
         />
 
         {/* Teacher Login / Register */}
@@ -70,7 +61,6 @@ export default function App() {
                 </div>
                 <AuthPage
                   onAuthenticated={handleAuthenticated}
-                  back={() => navigate('/')}
                 />
               </>
             )
@@ -88,7 +78,6 @@ export default function App() {
                 theme={theme}
                 toggleTheme={toggleTheme}
                 toast={toast}
-                openPublicScanner={() => navigate('/')}
               />
             ) : (
               <Navigate to="/login" replace />
@@ -103,7 +92,7 @@ export default function App() {
         {/* Catch-all fallback */}
         <Route
           path="*"
-          element={<Navigate to={session?.token ? '/dashboard' : '/'} replace />}
+          element={<Navigate to={session?.token ? '/dashboard' : '/login'} replace />}
         />
       </Routes>
       <Toast message={message} clear={() => setMessage('')} />

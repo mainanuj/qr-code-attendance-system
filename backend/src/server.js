@@ -627,6 +627,26 @@ app.post('/api/attendance/check-in', async (request, response, next) => {
     const [students] = await pool.execute(`SELECT ${studentFields} FROM students WHERE teacher_id = ? AND (qr_token = ? OR roll_number = ?) LIMIT 1`, [request.teacher.teacherId, code, code]);
     const student = students[0];
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
+
+    const [teacherSessions] = await pool.execute(`SELECT id FROM daily_class_sessions
+      WHERE teacher_id = ? AND session_date = ? AND status = 'Active' LIMIT 1`,
+    [request.teacher.teacherId, now.date]);
+    if (!teacherSessions.length) {
+      response.status(409).json({ error: "Today's class session has not been started yet. Click \"Start Today's Class\" to begin." });
+      return;
+    }
+
+    const [activeSessions] = await pool.execute(`SELECT id FROM daily_class_sessions
+      WHERE teacher_id = ? AND session_date = ?
+        AND (course = ? OR course = 'General Class')
+        AND (section = ? OR section = 'General' OR ? = 'General')
+        AND status = 'Active' LIMIT 1`,
+    [request.teacher.teacherId, now.date, student.course, student.section || 'General', student.section || 'General']);
+    if (!activeSessions.length) {
+      response.status(409).json({ error: `Today's class session for ${student.course} has not been started yet. Click "Start Today's Class" to begin.` });
+      return;
+    }
+
     const [settings] = await pool.execute(`SELECT TIME_FORMAT(start_time, '%H:%i:%s') AS startTime,
       TIME_FORMAT(present_until, '%H:%i:%s') AS presentUntil, TIME_FORMAT(end_time, '%H:%i:%s') AS endTime
       FROM class_attendance_settings WHERE teacher_id = ? AND course = ? LIMIT 1`, [request.teacher.teacherId, student.course]);

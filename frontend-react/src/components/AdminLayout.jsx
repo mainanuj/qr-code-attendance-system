@@ -7,9 +7,11 @@ import StudentsView from './StudentsView.jsx';
 import AttendanceView from './AttendanceView.jsx';
 import SettingsView from './SettingsView.jsx';
 import BrandLogo from './BrandLogo.jsx';
+import PublicScanner from './PublicScanner.jsx';
 
 const nav = [
   { id: 'dashboard', path: '/dashboard', icon: '▦', label: 'Overview' },
+  { id: 'scan', path: '/scan', icon: '⌁', label: 'Scan QR' },
   { id: 'students', path: '/students', icon: '♙', label: 'Students' },
   { id: 'attendance', path: '/attendance', icon: '▤', label: 'Attendance log' },
   { id: 'attendance-records', path: '/attendance-records', icon: '📋', label: 'Attendance Records' },
@@ -18,13 +20,14 @@ const nav = [
 
 const pathToView = {
   '/dashboard': 'dashboard',
+  '/scan': 'scan',
   '/students': 'students',
   '/attendance': 'records',
   '/attendance-records': 'attendance-records',
   '/settings': 'settings'
 };
 
-export default function AdminLayout({ session, logout, theme, toggleTheme, toast, openPublicScanner }) {
+export default function AdminLayout({ session, logout, theme, toggleTheme, toast }) {
   const location = useLocation();
   const navigate = useNavigate();
   const view = pathToView[location.pathname] || 'dashboard';
@@ -62,22 +65,24 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
   const present = todayAttendance.filter((item) => item.status === 'Present').length;
   const late = todayAttendance.filter((item) => item.status === 'Late').length;
   const rate = students.length ? Math.round(((present + late) / students.length) * 100) : 0;
-  const appTitle = view === 'dashboard' ? `Good morning, ${session.teacher.name} ✦` : ({ students: 'Student roster', records: 'Attendance log', 'attendance-records': 'Attendance Records', settings: 'Class settings' })[view];
+  const appTitle = view === 'dashboard' ? `Good morning, ${session.teacher.name} ✦` : ({ scan: 'Scan QR attendance', students: 'Student roster', records: 'Attendance log', 'attendance-records': 'Attendance Records', settings: 'Class settings' })[view];
   const startTodayClass = async () => {
     setStartingSession(true);
     try {
       await api.startSession();
       setSessionActive(true);
-      toast('Today’s class is active. Students can now use the public QR scanner.');
+      toast('Today’s class is active. QR attendance is now open.');
+      reload(today);
     } catch (error) { toast(error.message); }
     finally { setStartingSession(false); }
   };
 
   return <div className="app-shell">
     <aside className="sidebar" aria-label="Main navigation"><a className="brand" href="/dashboard" onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }}><span className="brand-mark"><BrandLogo size={32} /></span><span>Attendly</span></a><nav className="nav-links">{nav.map(({ id, path, icon, label }) => <button key={id} type="button" className={`nav-link ${location.pathname === path ? 'active' : ''}`} aria-current={location.pathname === path ? 'page' : undefined} onClick={() => navigate(path)}><span>{icon}</span> {label}</button>)}</nav><div className="sidebar-bottom"><div className="teacher-card"><span className="avatar">{initials(session.teacher.name)}</span><div><strong>{session.teacher.name}</strong><small>Instructor</small></div></div><button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button></div></aside>
-    <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={openPublicScanner}>Public scanner <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
+    <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={() => navigate('/scan')}>Scan QR <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
       {loading ? <div className="empty-state"><h3>Loading dashboard…</h3></div> : <>
         {view === 'dashboard' && <Dashboard dashboard={dashboard} students={students} attendance={attendance} rate={rate} present={present} late={late} navigate={navigate} startTodayClass={startTodayClass} startingSession={startingSession} sessionActive={sessionActive} />}
+        {view === 'scan' && <PublicScanner reload={reload} students={students} attendance={attendance} rate={rate} present={present} late={late} dashboard={dashboard} sessionActive={sessionActive} startTodayClass={startTodayClass} startingSession={startingSession} navigate={navigate} />}
         {view === 'students' && <StudentsView students={students} setStudents={setStudents} reload={reload} toast={toast} />}
         {view === 'records' && <AttendanceView mode="log" students={students} attendance={attendance} setAttendance={setAttendance} reload={reload} />}
         {view === 'attendance-records' && <AttendanceView mode="history" students={students} />}
