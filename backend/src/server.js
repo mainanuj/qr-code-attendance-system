@@ -129,9 +129,28 @@ app.post('/api/public/check-in', async (request, response, next) => {
   if (!code) { response.status(400).json({ error: 'QR token or roll number is required.' }); return; }
   try {
     const now = attendanceNow();
-    const [students] = await pool.execute(`SELECT teacher_id AS teacherId, ${studentFields}
-      FROM students WHERE qr_token = ? OR roll_number = ? LIMIT 1`, [code, code]);
-    const student = students[0];
+    let student = null;
+    const [byToken] = await pool.execute(`SELECT teacher_id AS teacherId, ${studentFields}
+      FROM students WHERE qr_token = ? LIMIT 1`, [code]);
+    if (byToken.length) {
+      student = byToken[0];
+    } else {
+      const [byRoll] = await pool.execute(`SELECT teacher_id AS teacherId, ${studentFields}
+        FROM students WHERE roll_number = ?`, [code]);
+      if (byRoll.length === 1) {
+        student = byRoll[0];
+      } else if (byRoll.length > 1) {
+        const [activeSessions] = await pool.execute(`SELECT teacher_id, course, section FROM daily_class_sessions
+          WHERE session_date = ? AND status = 'Active'`, [now.date]);
+        student = byRoll.find((s) =>
+          activeSessions.some((session) =>
+            session.teacher_id === s.teacherId &&
+            session.course === s.course &&
+            (session.section === s.section || session.section === 'General')
+          )
+        ) || byRoll[0];
+      }
+    }
     if (!student) { response.status(404).json({ error: 'No student matches this QR token or roll number.' }); return; }
     
     const [activeSessions] = await pool.execute(`SELECT id FROM daily_class_sessions
@@ -326,6 +345,8 @@ app.post('/api/students', async (request, response, next) => {
   }
   const student = { id: crypto.randomUUID(), name: name.trim(), roll: roll.trim(), course: course.trim(), section: section.trim(), token: makeToken() };
   try {
+    const [[existing]] = await pool.execute('SELECT 1 FROM students WHERE teacher_id = ? AND roll_number = ? LIMIT 1', [request.teacher.teacherId, student.roll]);
+    if (existing) { response.status(409).json({ error: 'This roll number already exists.' }); return; }
     await pool.execute('INSERT INTO students (id, teacher_id, name, roll_number, course, section, qr_token) VALUES (?, ?, ?, ?, ?, ?, ?)', [student.id, request.teacher.teacherId, student.name, student.roll, student.course, student.section, student.token]);
     response.status(201).json(student);
   } catch (error) {
@@ -367,7 +388,7 @@ app.post('/api/students/import', importUpload.single('file'), async (request, re
     const existingRolls = new Set();
     if (rolls.length) {
       const placeholders = rolls.map(() => '?').join(', ');
-      const [existingStudents] = await pool.execute(`SELECT roll_number FROM students WHERE roll_number IN (${placeholders})`, rolls);
+      const [existingStudents] = await pool.execute(`SELECT roll_number FROM students WHERE teacher_id = ? AND roll_number IN (${placeholders})`, [request.teacher.teacherId, ...rolls]);
       existingStudents.forEach((student) => existingRolls.add(String(student.roll_number).toLowerCase()));
     }
 
@@ -411,6 +432,11 @@ app.put('/api/students/:id', async (request, response, next) => {
     return;
   }
   try {
+    const [[existing]] = await pool.execute(
+      'SELECT 1 FROM students WHERE teacher_id = ? AND roll_number = ? AND id != ? LIMIT 1',
+      [request.teacher.teacherId, roll.trim(), request.params.id]
+    );
+    if (existing) { response.status(409).json({ error: 'This roll number already exists.' }); return; }
     const [result] = await pool.execute(`UPDATE students
       SET name = ?, roll_number = ?, course = ?, section = ?
       WHERE id = ? AND teacher_id = ?`, [name.trim(), roll.trim(), course.trim(), section.trim(), request.params.id, request.teacher.teacherId]);

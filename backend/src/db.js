@@ -66,5 +66,24 @@ export async function verifyDatabase() {
       UNIQUE KEY unique_daily_class_session (session_date, course, section),
       INDEX idx_session_date (session_date)
     )`);
+
+    // Migrate roll_number unique index from global to composite (teacher_id, roll_number)
+    const [rollIndexes] = await connection.query(`
+      SELECT INDEX_NAME FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students'
+        AND COLUMN_NAME = 'roll_number' AND NON_UNIQUE = 0
+        AND INDEX_NAME != 'unique_teacher_student_roll'
+    `);
+    for (const row of rollIndexes) {
+      await connection.query(`ALTER TABLE students DROP INDEX \`${row.INDEX_NAME}\``);
+    }
+    const [teacherRollIndex] = await connection.query(`
+      SELECT INDEX_NAME FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students'
+        AND INDEX_NAME = 'unique_teacher_student_roll'
+    `);
+    if (!teacherRollIndex.length) {
+      await connection.query('CREATE UNIQUE INDEX unique_teacher_student_roll ON students (teacher_id, roll_number)');
+    }
   } finally { connection.release(); }
 }

@@ -6,12 +6,15 @@ USE qr_attendance;
 
 CREATE TABLE IF NOT EXISTS students (
   id CHAR(36) NOT NULL PRIMARY KEY,
+  teacher_id CHAR(36) NOT NULL,
   name VARCHAR(120) NOT NULL,
-  roll_number VARCHAR(60) NOT NULL UNIQUE,
+  roll_number VARCHAR(60) NOT NULL,
   course VARCHAR(160) NOT NULL,
   section VARCHAR(20) NOT NULL DEFAULT 'General',
   qr_token VARCHAR(32) NOT NULL UNIQUE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_teacher_student_roll (teacher_id, roll_number),
+  INDEX idx_students_teacher (teacher_id)
 );
 
 CREATE TABLE IF NOT EXISTS attendance (

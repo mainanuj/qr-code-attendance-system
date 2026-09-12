@@ -42,6 +42,20 @@ try {
     await pool.execute("ALTER TABLE students ADD COLUMN section VARCHAR(20) NOT NULL DEFAULT 'General' AFTER course");
   }
 
+  const [rollIndexes] = await pool.query(`SELECT INDEX_NAME FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students'
+      AND COLUMN_NAME = 'roll_number' AND NON_UNIQUE = 0
+      AND INDEX_NAME != 'unique_teacher_student_roll'`);
+  for (const row of rollIndexes) {
+    await pool.execute(`ALTER TABLE students DROP INDEX \`${row.INDEX_NAME}\``);
+  }
+  const [teacherRollIndex] = await pool.query(`SELECT INDEX_NAME FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students'
+      AND INDEX_NAME = 'unique_teacher_student_roll'`);
+  if (!teacherRollIndex.length) {
+    await pool.execute('CREATE UNIQUE INDEX unique_teacher_student_roll ON students (teacher_id, roll_number)');
+  }
+
   await pool.execute(`CREATE TABLE IF NOT EXISTS class_attendance_settings (
     id CHAR(36) NOT NULL PRIMARY KEY,
     teacher_id CHAR(36) NOT NULL,
