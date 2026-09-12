@@ -54,7 +54,7 @@ export default function PublicScanner({ theme, toggleTheme, openLogin, openDashb
     <main className="public-main">
       <div className="public-heading"><p className="eyebrow">QR ATTENDANCE SYSTEM</p><h1>Scan QR to mark attendance</h1></div>
       <section className="public-scanner public-scanner-top" id="publicScanner">
-        <div className="public-scanner-copy"><p className="eyebrow">PUBLIC CHECK-IN</p><h2>Scan student QR</h2><p>Open the camera and point it at the student’s QR card. The server securely decides whether attendance is accepted, present, or late.</p>
+        <div className="public-scanner-copy"><p className="eyebrow">PUBLIC CHECK-IN</p><h2>Scan student QR</h2>
           <div className="public-session-box" style={{ marginBottom: 14 }}>
             {active ? <div className="public-live-class-badge public-scanner-ready"><b className="dot-active" /> <span>Scanner ready</span></div> : <p className="muted">Your teacher will start today’s class from their dashboard.</p>}
           </div>
