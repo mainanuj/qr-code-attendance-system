@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 
 export default function SettingsView({ dashboard, setDashboard, timings, setTimings, toast }) {
-  const [dashboardForm, setDashboardForm] = useState(dashboard);
+  const [dashboardForm, setDashboardForm] = useState(dashboard || { courseLabel: '', sessionLabel: '', yearLabel: '', semesterLabel: '' });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDashboardForm(dashboard || { courseLabel: '', sessionLabel: '', yearLabel: '', semesterLabel: '' });
+  }, [dashboard]);
   const sessionInput = (key, label, placeholder) => <label>{label}<input value={dashboardForm[key] || ''} onChange={(event) => setDashboardForm((value) => ({ ...value, [key]: event.target.value }))} placeholder={placeholder} required /></label>;
   async function saveSession(event) { event.preventDefault(); setSaving(true); try { const saved = await api.saveDashboardSettings(dashboardForm); setDashboard(saved); toast('Dashboard session details saved.'); } catch (error) { toast(error.message); } finally { setSaving(false); } }
   async function saveTiming(event, course) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); try { const saved = await api.saveAttendanceSettings({ course, ...data }); setTimings((rows) => rows.map((row) => row.course === course ? saved : row)); toast(`Timing saved for ${course}.`); } catch (error) { toast(error.message); } }

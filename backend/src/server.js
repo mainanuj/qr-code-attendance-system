@@ -215,8 +215,7 @@ app.get('/api/classes/dashboard-settings', async (request, response, next) => {
       year_label AS yearLabel, semester_label AS semesterLabel
       FROM teacher_dashboard_settings WHERE teacher_id = ? LIMIT 1`, [request.teacher.teacherId]);
     if (settings) { response.json(settings); return; }
-    const [[firstCourse]] = await pool.execute('SELECT course FROM students WHERE teacher_id = ? ORDER BY created_at LIMIT 1', [request.teacher.teacherId]);
-    response.json({ courseLabel: firstCourse?.course || 'Course', sessionLabel: '2026-27', yearLabel: 'Third Year', semesterLabel: 'Semester 5' });
+    response.json({ courseLabel: '', sessionLabel: '', yearLabel: '', semesterLabel: '' });
   } catch (error) { next(error); }
 });
 

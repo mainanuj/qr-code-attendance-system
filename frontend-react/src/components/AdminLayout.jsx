@@ -31,7 +31,7 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
 
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState([]);
-  const [dashboard, setDashboard] = useState({ courseLabel: 'Course', sessionLabel: '2026-27', yearLabel: 'Third Year', semesterLabel: 'Semester 5' });
+  const [dashboard, setDashboard] = useState({ courseLabel: '', sessionLabel: '', yearLabel: '', semesterLabel: '' });
   const [timings, setTimings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [startingSession, setStartingSession] = useState(false);
@@ -54,6 +54,7 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
   useEffect(() => {
     if (location.pathname === '/settings') {
       api.attendanceSettings().then(setTimings).catch(() => {});
+      api.dashboardSettings().then(setDashboard).catch(() => {});
     }
   }, [location.pathname]);
 
