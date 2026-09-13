@@ -41,14 +41,25 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
   const [sessionActive, setSessionActive] = useState(false);
   const today = localDate();
 
-  const reload = useCallback(async (date = '') => {
-    setLoading(true);
+  const reload = useCallback(async (date = today, showLoader = false) => {
+    if (showLoader) setLoading(true);
     try {
-      const [studentRows, attendanceRows, dashboardSettings, timingSettings, sessionStatus] = await Promise.all([api.students(), api.attendance(date), api.dashboardSettings(), api.attendanceSettings(), api.publicSession()]);
-      setStudents(studentRows); setAttendance(attendanceRows); setDashboard(dashboardSettings); setTimings(timingSettings); setSessionActive(Boolean(sessionStatus.teacherActive));
+      const targetDate = date || today;
+      const [studentRows, attendanceRows, dashboardSettings, timingSettings, sessionStatus] = await Promise.all([
+        api.students(),
+        api.attendance(targetDate),
+        api.dashboardSettings(),
+        api.attendanceSettings(),
+        api.publicSession()
+      ]);
+      setStudents(studentRows);
+      setAttendance(attendanceRows);
+      setDashboard(dashboardSettings);
+      setTimings(timingSettings);
+      setSessionActive(Boolean(sessionStatus.teacherActive));
     } catch (error) { toast(error.message); }
     finally { setLoading(false); }
-  }, [toast]);
+  }, [toast, today]);
 
   // The attendance log must open on today's register, not the entire old
   // attendance history. The date-specific API also creates the Absent rows.
@@ -59,7 +70,10 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
       api.attendanceSettings().then(setTimings).catch(() => {});
       api.dashboardSettings().then(setDashboard).catch(() => {});
     }
-  }, [location.pathname]);
+    if (location.pathname === '/attendance') {
+      api.attendance(today).then(setAttendance).catch(() => {});
+    }
+  }, [location.pathname, today]);
 
   const todayAttendance = useMemo(() => attendance.filter((item) => item.date === today), [attendance, today]);
   const present = todayAttendance.filter((item) => item.status === 'Present').length;
