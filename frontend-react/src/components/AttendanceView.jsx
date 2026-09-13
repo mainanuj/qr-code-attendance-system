@@ -3,21 +3,28 @@ import { api } from '../api/client.js';
 import { escapeCsv, formatDate, localDate } from '../utils/format.js';
 
 export default function AttendanceView({ mode, students, attendance, setAttendance, reload }) {
-  return mode === 'history' ? <History students={students} /> : <Log attendance={attendance} setAttendance={setAttendance} reload={reload} />;
+  return mode === 'history' ? <History students={students} /> : <Log students={students} attendance={attendance} setAttendance={setAttendance} reload={reload} />;
 }
-function Log({ attendance, setAttendance, reload }) {
+function Log({ students = [], attendance = [], setAttendance, reload }) {
   const [date, setDate] = useState(localDate);
   const [status, setStatus] = useState('');
+  const [section, setSection] = useState('');
   const [search, setSearch] = useState('');
+  const sections = useMemo(() => {
+    const fromAttendance = (attendance || []).map((row) => row.section);
+    const fromStudents = (students || []).map((s) => s.section);
+    return [...new Set([...fromAttendance, ...fromStudents].filter(Boolean))].sort();
+  }, [attendance, students]);
   const rows = useMemo(() => {
     return attendance
       .filter((row) => (!date || row.date === date))
       .filter((row) => (!status || row.status === status))
+      .filter((row) => (!section || (row.section || '') === section))
       .filter((row) => (!search || `${row.name || ''} ${row.roll || ''}`.toLowerCase().includes(search.toLowerCase())));
-  }, [attendance, date, status, search]);
+  }, [attendance, date, status, section, search]);
   async function changeDate(value) { setDate(value); const data = await api.attendance(value); setAttendance(data); }
   function exportCsv() { const csv = ['Student,Roll number,Course,Section,Date,Check-in time,Status', ...rows.map((row) => [row.name || '', row.roll || '', row.course || '', row.section || '', row.date, row.time, row.status].map(escapeCsv).join(','))].join('\n'); const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `attendly-${date}.csv`; link.click(); URL.revokeObjectURL(link.href); }
-  return <section><div className="page-heading"><div><p className="eyebrow">REGISTER</p><h2>Attendance log</h2><p className="muted">A complete record of your student check-ins.</p></div><button className="primary-btn" onClick={exportCsv}>⇩ Export CSV</button></div><div className="toolbar"><label className="field-label">Date<input type="date" value={date} onChange={(event) => changeDate(event.target.value)} /></label><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option>Present</option><option>Late</option><option>Absent</option></select><label className="search-box">⌕ <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search student" /></label></div><section className="panel table-panel"><table><thead><tr><th>No.</th><th>Student</th><th>Roll no.</th><th>Section</th><th>Date</th><th>Check-in time</th><th>Status</th></tr></thead><tbody>{rows.map((row, index) => <tr key={row.id}><td>{index + 1}</td><td>{row.name || 'Student'}</td><td>{row.roll || '—'}</td><td>{row.section || '—'}</td><td>{formatDate(row.date)}</td><td>{row.time}</td><td><span className={`status ${row.status.toLowerCase()}`}>{row.status}</span></td></tr>)}</tbody></table>{!rows.length && <div className="empty-state"><span>▤</span><h3>No attendance records</h3><p>Scan a student QR code to begin.</p></div>}</section></section>;
+  return <section><div className="page-heading"><div><p className="eyebrow">REGISTER</p><h2>Attendance log</h2><p className="muted">A complete record of your student check-ins.</p></div><button className="primary-btn" onClick={exportCsv}>⇩ Export CSV</button></div><div className="toolbar"><label className="field-label">Date<input type="date" value={date} onChange={(event) => changeDate(event.target.value)} /></label><select value={section} onChange={(event) => setSection(event.target.value)}><option value="">All sections</option>{sections.map((value) => <option key={value} value={value}>{value}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option>Present</option><option>Late</option><option>Absent</option></select><label className="search-box">⌕ <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search student" /></label></div><section className="panel table-panel"><table><thead><tr><th>No.</th><th>Student</th><th>Roll no.</th><th>Section</th><th>Date</th><th>Check-in time</th><th>Status</th></tr></thead><tbody>{rows.map((row, index) => <tr key={row.id}><td>{index + 1}</td><td>{row.name || 'Student'}</td><td>{row.roll || '—'}</td><td>{row.section || '—'}</td><td>{formatDate(row.date)}</td><td>{row.time}</td><td><span className={`status ${row.status.toLowerCase()}`}>{row.status}</span></td></tr>)}</tbody></table>{!rows.length && <div className="empty-state"><span>▤</span><h3>No attendance records</h3><p>Scan a student QR code to begin.</p></div>}</section></section>;
 }
 function History({ students }) {
   const [studentId, setStudentId] = useState(''); const [data, setData] = useState(null); const [fromDate, setFromDate] = useState(''); const [toDate, setToDate] = useState(''); const [search, setSearch] = useState('');

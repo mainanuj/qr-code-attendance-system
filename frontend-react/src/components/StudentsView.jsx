@@ -6,15 +6,13 @@ const emptyStudent = { name: '', roll: '', course: '', section: '' };
 
 export default function StudentsView({ students, setStudents, reload, toast }) {
   const [search, setSearch] = useState('');
-  const [course, setCourse] = useState('');
   const [section, setSection] = useState('');
   const [editing, setEditing] = useState(null);
   const [cardStudent, setCardStudent] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importState, setImportState] = useState({ file: null, message: '', busy: false });
-  const courses = useMemo(() => [...new Set(students.map((student) => student.course))].sort(), [students]);
   const sections = useMemo(() => [...new Set(students.map((student) => student.section))].sort(), [students]);
-  const filtered = students.filter((student) => (!search || `${student.name} ${student.roll}`.toLowerCase().includes(search.toLowerCase())) && (!course || student.course === course) && (!section || student.section === section));
+  const filtered = students.filter((student) => (!search || `${student.name} ${student.roll}`.toLowerCase().includes(search.toLowerCase())) && (!section || student.section === section));
 
   async function saveStudent(event) {
     event.preventDefault();
@@ -43,7 +41,7 @@ export default function StudentsView({ students, setStudents, reload, toast }) {
   const printAll = () => window.print();
 
   return <section><div className="page-heading"><div><p className="eyebrow">ROSTER</p><h2>Students</h2><p className="muted">Add students and issue an individual, secure QR code.</p></div><div className="student-page-actions"><button className="outline-btn" type="button" onClick={() => setImportOpen(true)}>Import students</button><button className="primary-btn" type="button" onClick={() => setEditing(emptyStudent)}>+ Add student</button></div></div>
-    <div className="toolbar"><label className="search-box">⌕ <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name or roll number" /></label><select value={course} onChange={(event) => setCourse(event.target.value)}><option value="">All courses</option>{courses.map((value) => <option key={value}>{value}</option>)}</select><select value={section} onChange={(event) => setSection(event.target.value)}><option value="">All sections</option>{sections.map((value) => <option key={value}>{value}</option>)}</select><button className="outline-btn" type="button" onClick={printAll}>▣ Print all cards</button></div>
+    <div className="toolbar"><label className="search-box">⌕ <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name or roll number" /></label><select value={section} onChange={(event) => setSection(event.target.value)}><option value="">All sections</option>{sections.map((value) => <option key={value}>{value}</option>)}</select><button className="outline-btn" type="button" onClick={printAll}>▣ Print all cards</button></div>
     <section className="panel table-panel"><table><thead><tr><th>No.</th><th>Student</th><th>Roll no.</th><th>Course</th><th>Section</th><th>QR status</th><th /></tr></thead><tbody>{filtered.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td><div className="table-student"><span className="student-avatar tiny-avatar">{initials(student.name)}</span>{student.name}</div></td><td>{student.roll}</td><td>{student.course}</td><td>{student.section}</td><td><span className="qr-issued">● ISSUED</span></td><td className="row-actions table-actions"><button className="small-btn" onClick={() => setCardStudent(student)}>View QR</button><button className="small-btn" onClick={() => setEditing(student)}>Edit</button><button className="small-btn danger" onClick={() => remove(student)}>×</button></td></tr>)}</tbody></table>{!filtered.length && <div className="empty-state"><span>♙</span><h3>No students yet</h3><p>Add your first student to generate a QR card.</p></div>}</section>
     {editing && <StudentModal student={editing} onClose={() => setEditing(null)} onSubmit={saveStudent} />}
     {cardStudent && <QrModal student={cardStudent} onClose={() => setCardStudent(null)} />}
