@@ -39,7 +39,40 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
   const [loading, setLoading] = useState(true);
   const [startingSession, setStartingSession] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const today = localDate();
+
+  const toggleSidebar = (e) => {
+    e.preventDefault();
+    if (window.innerWidth <= 1150) {
+      setSidebarOpen((prev) => !prev);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1150) {
+        setSidebarOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const reload = useCallback(async (date = today, showLoader = false) => {
     if (showLoader) setLoading(true);
@@ -91,8 +124,53 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
     finally { setStartingSession(false); }
   };
 
-  return <div className="app-shell">
-    <aside className="sidebar" aria-label="Main navigation"><a className="brand" href="/dashboard" onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }}><span className="brand-mark"><BrandLogo size={32} /></span><span>Attendly</span></a><nav className="nav-links">{nav.map(({ id, path, icon, label }) => <button key={id} type="button" className={`nav-link ${location.pathname === path ? 'active' : ''}`} aria-current={location.pathname === path ? 'page' : undefined} onClick={() => navigate(path)}><span>{icon}</span> {label}</button>)}</nav><div className="sidebar-bottom"><div className="teacher-card"><span className="avatar">{initials(session.teacher.name)}</span><div><strong>{session.teacher.name}</strong><small>Instructor</small></div></div><button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button></div></aside>
+  return <div className={`app-shell ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
+    <aside className={`sidebar ${sidebarOpen ? 'expanded' : ''}`} aria-label="Main navigation">
+      <a
+        className="brand"
+        href="/dashboard"
+        onClick={toggleSidebar}
+        role="button"
+        aria-expanded={sidebarOpen}
+        title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+      >
+        <span className="brand-mark"><BrandLogo size={32} /></span>
+        <span>Attendly</span>
+      </a>
+      <nav className="nav-links">
+        {nav.map(({ id, path, icon, label }) => (
+          <button
+            key={id}
+            type="button"
+            className={`nav-link ${location.pathname === path ? 'active' : ''}`}
+            aria-current={location.pathname === path ? 'page' : undefined}
+            onClick={() => {
+              navigate(path);
+              setSidebarOpen(false);
+            }}
+          >
+            <span>{icon}</span> {label}
+          </button>
+        ))}
+      </nav>
+      <div className="sidebar-bottom">
+        <div className="teacher-card">
+          <span className="avatar">{initials(session.teacher.name)}</span>
+          <div>
+            <strong>{session.teacher.name}</strong>
+            <small>Instructor</small>
+          </div>
+        </div>
+        <button className="settings-button" type="button" title="Log out" onClick={logout}>↪</button>
+      </div>
+    </aside>
+    {sidebarOpen && (
+      <div
+        className="sidebar-backdrop"
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
+    )}
     <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={() => navigate('/scan')}>Scan QR <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
       {loading ? <div className="empty-state"><h3>Loading dashboard…</h3></div> : <>
         {view === 'dashboard' && <Dashboard dashboard={dashboard} students={students} attendance={attendance} rate={rate} present={present} late={late} navigate={navigate} startTodayClass={startTodayClass} startingSession={startingSession} sessionActive={sessionActive} />}

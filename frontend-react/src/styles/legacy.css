@@ -51,3 +51,162 @@
   filter: drop-shadow(0 4px 14px rgba(34, 211, 238, 0.45));
 }
 
+/* Sidebar toggle on compact / smaller screens */
+.authenticated .sidebar {
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), padding 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s ease, background 0.28s ease;
+}
+
+@media (max-width: 1150px) {
+  .authenticated .brand {
+    cursor: pointer !important;
+  }
+  .authenticated .sidebar:not(.expanded) .brand:hover .brand-mark .brand-icon {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.65));
+  }
+
+  /* Expanded side panel floating drawer */
+  .authenticated .sidebar.expanded {
+    width: 252px !important;
+    padding: 30px 18px 20px !important;
+    z-index: 100 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 18px 0 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    background: #091126 !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+  }
+
+  body.light-theme .authenticated .sidebar.expanded {
+    background: #ffffff !important;
+    box-shadow: 18px 0 50px rgba(23, 33, 55, 0.2), 0 0 0 1px #e3e8f1 !important;
+  }
+
+  /* Brand in expanded state */
+  .authenticated .sidebar.expanded .brand {
+    justify-content: flex-start !important;
+    padding-left: 9px !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  .authenticated .sidebar.expanded .brand span:last-child {
+    display: inline-block !important;
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    letter-spacing: -1px !important;
+    opacity: 1 !important;
+    color: inherit !important;
+    animation: sidebarTextFadeIn 0.22s ease forwards;
+  }
+
+  /* Nav links in expanded state */
+  .authenticated .sidebar.expanded .nav-links {
+    margin-top: 56px !important;
+    gap: 7px !important;
+    display: grid !important;
+    width: 100% !important;
+  }
+  .authenticated .sidebar.expanded .nav-link {
+    padding: 13px 14px !important;
+    text-align: left !important;
+    font: 600 14px Manrope, Arial, sans-serif !important;
+    font-size: 14px !important;
+    justify-content: flex-start !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    border-radius: 10px !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+    animation: sidebarTextFadeIn 0.22s ease forwards;
+  }
+  .authenticated .sidebar.expanded .nav-link span {
+    font-size: 18px !important;
+    width: 27px !important;
+    min-width: 27px !important;
+    display: inline-block !important;
+    vertical-align: -2px !important;
+    text-align: left !important;
+  }
+
+  /* Teacher card & logout button in expanded state */
+  .authenticated .sidebar.expanded .sidebar-bottom {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 18px 6px 0 !important;
+    width: 100% !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  body.light-theme .authenticated .sidebar.expanded .sidebar-bottom {
+    border-top-color: #e9edf3 !important;
+  }
+  .authenticated .sidebar.expanded .teacher-card {
+    justify-content: flex-start !important;
+    display: flex !important;
+    gap: 9px !important;
+    align-items: center !important;
+  }
+  .authenticated .sidebar.expanded .teacher-card > div {
+    display: block !important;
+    text-align: left !important;
+    animation: sidebarTextFadeIn 0.22s ease forwards;
+  }
+  .authenticated .sidebar.expanded .teacher-card strong {
+    display: block !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+  .authenticated .sidebar.expanded .teacher-card small {
+    display: block !important;
+    font-size: 11px !important;
+    color: var(--muted) !important;
+    margin-top: 2px !important;
+  }
+  .authenticated .sidebar.expanded .settings-button {
+    display: block !important;
+    font-size: 20px !important;
+    background: transparent !important;
+    border: 0 !important;
+    color: #8790a1 !important;
+    cursor: pointer !important;
+    animation: sidebarTextFadeIn 0.22s ease forwards;
+  }
+}
+
+@media (max-width: 768px) {
+  .authenticated .sidebar.expanded {
+    display: flex !important;
+  }
+}
+
+/* Sidebar backdrop overlay on compact screens */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 11, 24, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 95;
+  cursor: pointer;
+  animation: sidebarBackdropFade 0.24s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes sidebarBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sidebarTextFadeIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (min-width: 1151px) {
+  .sidebar-backdrop {
+    display: none !important;
+  }
+}
+
+
