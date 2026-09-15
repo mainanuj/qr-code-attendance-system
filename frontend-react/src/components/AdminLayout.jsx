@@ -171,7 +171,7 @@ export default function AdminLayout({ session, logout, theme, toggleTheme, toast
         aria-hidden="true"
       />
     )}
-    <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button" type="button" title="Notifications">♧<i /></button><button className="primary-btn scan-nav" type="button" onClick={() => navigate('/scan')}>Scan QR <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
+    <main className="main-content"><header className="topbar"><div><p className="eyebrow">{dateLabel()}</p><h1>{appTitle}</h1></div><div className="top-actions"><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="primary-btn scan-nav" type="button" onClick={() => navigate('/scan')}>Scan QR <span>↗</span></button><button className="mobile-logout" type="button" onClick={logout}>Log out</button></div></header>
       {loading ? <div className="empty-state"><h3>Loading dashboard…</h3></div> : <>
         {view === 'dashboard' && <Dashboard dashboard={dashboard} students={students} attendance={attendance} rate={rate} present={present} late={late} navigate={navigate} startTodayClass={startTodayClass} startingSession={startingSession} sessionActive={sessionActive} />}
         {view === 'scan' && <PublicScanner reload={reload} students={students} attendance={attendance} rate={rate} present={present} late={late} dashboard={dashboard} sessionActive={sessionActive} startTodayClass={startTodayClass} startingSession={startingSession} navigate={navigate} />}
