@@ -220,9 +220,10 @@ Bulk import accepts `.csv` and `.xlsx` files. Columns can appear in any order, w
 
 | Roll Number | Name | Course | Section |
 |---|---|---|---|
-| 241013106001 | Aayush | BCA | A |
-| 241013106002 | Abhay | BCA | A |
-| 241013106056 | Abhay Singh | BCA | B |
+| 241013106031 | ANUJ KUMAR | BCA | A |
+| 241013106036 | ARYA YADAV | BCA | A |
+| 241013106060 | GAVNISH GAUTAM | BCA | A |
+| 241013106062 | HARSH SINGH SAMANIYA | BCA | A |
 
 Duplicate roll numbers within the same teacher account will be reported during import. Each newly imported student is automatically assigned a unique QR access card.
 
