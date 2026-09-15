@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import { api } from '../api/client.js';
-import { initials } from '../utils/format.js';
+import { initials, qrUrl } from '../utils/format.js';
 import QrSvg from './QrSvg.jsx';
 import BrandLogo from './BrandLogo.jsx';
 
@@ -138,5 +139,29 @@ function StudentModal({ student, onClose, onSubmit }) {
   }
   return <ModalDialog id="studentModal" onClose={onClose}><form id="studentForm" className="modal-form" noValidate onSubmit={submit}><div className="modal-heading"><div><p className="eyebrow">{edit ? 'EDIT ROSTER ENTRY' : 'NEW ROSTER ENTRY'}</p><h2>{edit ? 'Edit student' : 'Add student'}</h2></div><button className="close-btn" type="button" onClick={onClose}>×</button></div><p className="form-intro">{edit ? 'Update the student details. Their existing QR code will continue to work.' : 'Enter the student details to issue their unique QR attendance card.'}</p><div className="form-grid old-popup-fields"><label>Full name<input id="studentName" name="name" placeholder="e.g. Riya Patel" defaultValue={student.name} onInput={() => setError('')} /></label><label>Roll number<input id="studentRoll" name="roll" placeholder="e.g. CS24-018" defaultValue={student.roll} onInput={() => setError('')} /></label><label>Course<input id="studentCourse" name="course" placeholder="e.g. BCA" defaultValue={student.course} onInput={() => setError('')} /></label><label>Section<input id="studentSection" name="section" maxLength="20" placeholder="e.g. A, B, C or D" defaultValue={student.section} onInput={() => setError('')} /></label></div><p className="form-error" role="alert">{error}</p><div className="modal-actions"><button className="outline-btn" type="button" onClick={onClose}>Cancel</button><button className="primary-btn" id="studentSubmitButton" type="submit">{edit ? 'Save changes' : 'Create QR card'}</button></div></form></ModalDialog>;
 }
-function QrModal({ student, onClose, onPrintSingle }) { return <ModalDialog id="qrModal" onClose={onClose}><div className="qr-modal-content"><button className="close-btn qr-close" type="button" onClick={onClose}>×</button><p className="eyebrow">STUDENT ACCESS CARD</p><h2>{student.name}</h2><p className="muted">{student.roll} · {student.course} · {student.section}</p><div className="qr-image-wrap"><QrSvg token={student.token} size={170} /></div><code>{student.token}</code><button className="primary-btn wide" type="button" onClick={() => onPrintSingle(student)}>▣ Print QR card</button></div></ModalDialog>; }
+function QrModal({ student, onClose, onPrintSingle }) {
+  return (
+    <ModalDialog id="qrModal" onClose={onClose}>
+      <div className="qr-modal-content">
+        <button className="close-btn qr-close" type="button" onClick={onClose}>×</button>
+        <p className="eyebrow">STUDENT ACCESS CARD</p>
+        <h2>{student.name}</h2>
+        <p className="muted">{student.roll} · {student.course} · {student.section}</p>
+        <div className="qr-image-wrap">
+          <img
+            src={qrUrl(student.token)}
+            alt={`QR code for ${student.name}`}
+            onError={(e) => {
+              QRCode.toDataURL(student.token, { margin: 0, width: 260 })
+                .then((url) => { e.currentTarget.src = url; })
+                .catch(() => {});
+            }}
+          />
+        </div>
+        <code>{student.token}</code>
+        <button className="primary-btn wide" type="button" onClick={() => onPrintSingle(student)}>▣ Print QR card</button>
+      </div>
+    </ModalDialog>
+  );
+}
 function ImportModal({ state, setState, onClose, onSubmit }) { return <ModalDialog id="importModal" onClose={onClose}><form id="importStudentsForm" className="modal-form" onSubmit={onSubmit}><div className="modal-heading"><div><p className="eyebrow">BULK ROSTER IMPORT</p><h2>Import students</h2></div><button className="close-btn" type="button" onClick={onClose}>×</button></div><p className="form-intro">Upload a CSV or Excel file. Columns can be in any order.</p><div className="import-guide"><strong>Required column headers</strong><span>Roll Number</span><span>Name</span><span>Course</span><span>Section</span></div><label className="import-file-label">Choose CSV or Excel file<input id="studentImportFile" name="file" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required onChange={(event) => setState((value) => ({ ...value, file: event.target.files[0] || null, message: '' }))} /></label><p className="import-file-name">{state.file?.name || 'No file selected'}</p>{state.message && <div className="import-summary show success">{state.message}</div>}<div className="modal-actions"><button className="outline-btn" type="button" onClick={onClose}>Cancel</button><button className="primary-btn" id="importSubmitButton" disabled={state.busy} type="submit">{state.busy ? 'Importing…' : 'Import students'}</button></div></form></ModalDialog>; }
