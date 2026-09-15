@@ -1,183 +1,233 @@
-# QR Code Attendance System
+# Attendly — QR Code Attendance System
 
-A full-stack attendance system built with **React**, **Node.js/Express**, and **MySQL**. Teachers manage their own students and class settings, while students can mark attendance from a public QR scanner page.
+A modern full-stack web application for school and college class attendance, built with **React**, **Node.js/Express**, and **MySQL**. Teachers have isolated accounts to manage their own classes, students, and attendance timings, with QR-based attendance tracking integrated directly inside an authenticated dashboard.
 
-## Technology used
+---
 
-- Frontend: React + Vite
-- Backend: Node.js + Express
-- Database: MySQL
-- QR scanning: Browser camera + `jsQR`
-- Authentication: JWT teacher login
+## Technology Stack
 
-## Project structure
+- **Frontend:** React 19, Vite, React Router v7 (`react-router-dom`)
+- **Backend:** Node.js (ES Modules), Express
+- **Database:** MySQL 8.x with connection pooling (`mysql2/promise`)
+- **Authentication:** JWT (JSON Web Tokens) with `bcryptjs` password hashing
+- **QR Code Engine:** Browser camera stream + `jsQR` / Native `BarcodeDetector` API
+- **File Processing:** `multer` and `xlsx` for bulk Excel/CSV student roster imports
+- **Styling:** Custom CSS with Futuristic Dark and Light mode, Glassmorphism, and responsive drawer navigation
+
+---
+
+## Project Structure
 
 ```text
 qr code attendance system/
 │
-├── frontend-react/                 # Active React frontend
+├── frontend-react/                    # React frontend (Vite)
+│   ├── public/                        # Static assets & icons
 │   ├── src/
-│   │   ├── components/             # Pages and reusable UI components
-│   │   ├── api/client.js           # Calls backend APIs
-│   │   ├── hooks/                  # Camera scanner and theme hooks
-│   │   └── styles/                 # Light/dark theme styles
-│   ├── dist/                       # React production build (generated)
+│   │   ├── api/
+│   │   │   └── client.js              # Centralized API client & HTTP interceptors
+│   │   ├── components/                # Application views and UI components
+│   │   │   ├── AdminLayout.jsx        # Main dashboard shell & responsive sidebar
+│   │   │   ├── AttendanceView.jsx     # Daily attendance log & student attendance records
+│   │   │   ├── AuthPage.jsx           # Teacher login and registration modal/page
+│   │   │   ├── BrandLogo.jsx          # Custom Attendly SVG logo mark
+│   │   │   ├── PublicScanner.jsx      # Authenticated QR camera scanner & manual check-in
+│   │   │   ├── SettingsView.jsx       # Class configuration and timing rules
+│   │   │   ├── StudentsView.jsx       # Student roster management (import, add, edit, print)
+│   │   │   ├── ThemeToggle.jsx        # Dark / Light theme toggle switch
+│   │   │   └── Toast.jsx              # Status toast notifications
+│   │   ├── hooks/
+│   │   │   ├── useCameraScanner.js    # Camera stream, barcode detector, & frame loop
+│   │   │   └── useTheme.js            # Theme state persistence (dark/light)
+│   │   ├── styles/                    # Stylesheets (modern dark, glassmorphism, responsive)
+│   │   │   ├── legacy.css             # Main stylesheet combining theme modules
+│   │   │   ├── mobile-responsive.css  # Mobile bottom nav & compact layouts
+│   │   │   └── react-popups.css       # Dialog and modal styles
+│   │   ├── utils/
+│   │   │   └── format.js              # Date/time formatters, CSV export helpers
+│   │   ├── App.jsx                    # Root component with React Router setup
+│   │   └── main.jsx                   # React application entry point
+│   ├── dist/                          # Production build output (served by Express)
+│   ├── package.json
+│   └── vite.config.js
+│
+├── backend/                           # Node.js + Express backend
+│   ├── sql/
+│   │   └── schema.sql                 # MySQL schema, table definitions, & indexes
+│   ├── src/
+│   │   ├── db.js                      # MySQL connection pool & verification
+│   │   ├── migrate-auth.js            # Migration script for auth & multi-tenant schema
+│   │   └── server.js                  # Express API routes, JWT auth, & static hosting
+│   ├── .env.example                   # Environment variable template
 │   └── package.json
 │
-├── backend/                        # Node.js + Express server
-│   ├── src/server.js               # APIs and React static hosting
-│   ├── src/db.js                   # MySQL connection pool
-│   ├── src/migrate-auth.js         # Teacher/login database migration
-│   ├── sql/schema.sql              # Database tables
-│   ├── .env.example                # Environment variable template
-│   └── package.json
-│
-├── run-attendance.bat              # Starts backend on Windows
-└── README.md
+├── run-attendance.bat                 # Windows one-click startup script
+└── README.md                          # Project documentation
 ```
 
-## How it works
+---
 
-```text
-Browser → Express server (localhost:5000) → MySQL database (localhost:3306)
-```
+## Application URL Routes
 
-The Express server serves the compiled React app and its API from the same address. All student, attendance, teacher, timing, and session data is stored in MySQL.
+The frontend utilizes client-side routing via `react-router-dom`:
 
-## Features
+| Route | Page / View | Description |
+|---|---|---|
+| `/` or `/login` | Teacher Login / Signup | Sign in or register a new teacher account |
+| `/dashboard` | Teacher Dashboard | Overview statistics, today's attendance rate, & live check-in feed |
+| `/scan` | QR Scanner | In-dashboard camera scanner & manual token/roll check-in |
+| `/students` | Student Management | Student roster, add/edit/delete, bulk import, & QR card printing |
+| `/attendance` | Attendance Log | Daily attendance register with Date, Section, & Status filters + CSV export |
+| `/attendance-records` | Attendance Records | Date-wise attendance history and percentage per student |
+| `/settings` | Class Settings | Course, academic session, semester, & attendance timing rules |
 
-- Public QR scanner page without login
-- Teacher login with separate private dashboards
-- Student add, edit, delete, search, filter, and QR card generation
-- CSV and Excel student import
-- Attendance log with Present, Late, and Absent status
-- Per-student attendance history
-- Attendance CSV export
-- Class settings: course, academic session, year, semester
-- Attendance time rules: Start → Present Until → End
-- Light and dark mode
+---
 
-## First-time setup
+## Key Features
 
-### 1. Create the environment file
+### 1. Teacher Isolation & Fresh Account Setup
+- Each teacher has a completely isolated account with their own students, classes, and logs.
+- New accounts start with clean, unshared class settings (no pre-filled or cross-account data).
+
+### 2. Teacher-Specific Student Uniqueness
+- Student roll numbers are unique **per teacher** (composite `UNIQUE(teacher_id, roll_number)`). Different teachers can have students with Roll No. `101` without collision.
+- Student QR access tokens (`ATD-XXXXXX`) remain globally unique across the system.
+
+### 3. Authenticated QR Scanner with Visual Feedback
+- Located inside the dashboard at `/scan`.
+- Supports live camera scanning with continuous frame processing and manual input fallback.
+- Animated green checkmark (`✓`) and status confirmation overlay for instant check-in confirmation.
+- Class session validation: attendance can only be recorded after clicking **"Start Today's Class"**.
+
+### 4. Smart Server-Side Timing Rules
+- Attendance status (`Present`, `Late`, or scan rejected) is calculated strictly by the server using server time:
+  ```text
+  [Start Time] ──── Present ──── [Present Until] ──── Late ──── [End Time] ──── (Rejected)
+  ```
+- Before `Start Time` or after `End Time`, scans are rejected.
+- Validates that `Start Time < Present Until < End Time`.
+
+### 5. Student Roster Management & Bulk Import
+- Add individual students or bulk-import via `.csv` or `.xlsx` (Excel) spreadsheets.
+- Clean toolbar with real-time name/roll search and section filter.
+- One-click individual QR card modal and bulk **Print all cards** view.
+
+### 6. Comprehensive Reporting & Logs
+- **Attendance Log:** Displays full register for any selected date with Section (`All sections`, `A`, `B`, etc.) and Status filters.
+- **Export to CSV:** Downloads attendance registers formatted for Excel/spreadsheets.
+- **Student History:** View historical attendance record, total classes held, present/late/absent counts, and calculated attendance percentage for any student.
+
+### 7. Responsive UI with Expandable Side Panel
+- On full desktop screens, a 252px sidebar is visible.
+- On compact / split screens, the sidebar collapses into a sleek 72px icon rail.
+- Clicking the **Attendly logo** smoothly expands the side panel into a floating drawer with full navigation labels and teacher details.
+- Toggle between **Futuristic Dark** and **Light** themes.
+
+---
+
+## Setup & Installation
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [MySQL Server](https://dev.mysql.com/downloads/mysql/) (v8.x recommended)
+
+---
+
+### Step 1: Clone and Configure Environment
+
+1. Navigate to the project folder.
+2. Create your environment file from the template:
+   ```powershell
+   Copy-Item .\backend\.env.example .\backend\.env
+   ```
+3. Open `backend/.env` in a text editor and fill in your MySQL root password and a secure JWT secret:
+   ```env
+   PORT=5000
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=your_mysql_password
+   DB_NAME=qr_attendance_system
+   JWT_SECRET=your_long_random_secret_key_here
+   ```
+
+---
+
+### Step 2: Initialize the Database
+
+1. Open your terminal in the project root and run the SQL schema:
+   ```powershell
+   mysql -u root -p < .\backend\sql\schema.sql
+   ```
+   *(Enter your MySQL root password when prompted)*
+
+2. Run the database migration script to ensure all multi-tenant tables and composite constraints are created:
+   ```powershell
+   cd .\backend
+   npm install
+   npm run migrate
+   ```
+
+---
+
+### Step 3: Install Frontend Dependencies
 
 ```powershell
-Copy-Item .\backend\.env.example .\backend\.env
-```
-
-Open `backend/.env` and enter your MySQL password:
-
-```env
-DB_PASSWORD=your_mysql_password
-JWT_SECRET=use_a_long_random_private_value_here
-```
-
-Do not upload `.env` to GitHub.
-
-### 2. Create the database tables
-
-Run this from the main project folder. MySQL will ask for your MySQL root password.
-
-```powershell
-mysql -u root -p < .\backend\sql\schema.sql
-```
-
-### 3. Run the teacher/login migration
-
-This creates or updates the teacher, username, section, and class-settings tables.
-
-```powershell
-cd .\backend
-npm.cmd run migrate
-```
-
-### 4. Install packages
-
-Only needed on a new laptop or after cloning from GitHub:
-
-```powershell
-cd .\backend
-npm.cmd install
 cd ..\frontend-react
-npm.cmd install
+npm install
 ```
 
-### 5. Build the React frontend
+---
 
+### Step 4: Run the Application
+
+#### Option A: Quick Start (Batch File)
+Double-click `run-attendance.bat` in the project root, or run in PowerShell:
 ```powershell
-cd .\frontend-react
-npm.cmd run build
+.\run-attendance.bat
 ```
+This automatically starts the backend server on port `5000`, the Vite dev server on port `5173`, and opens the browser.
 
-### 6. Start the application
-
-```powershell
-cd ..\backend
-npm.cmd start
-```
-
-Open [http://localhost:5000](http://localhost:5000).
-
-## Daily use
-
-1. Open `http://localhost:5000` for the public QR scanner.
-2. Use **Teacher login** to open the private dashboard.
-3. Add/import students and configure class timings in **Class settings**.
-4. From the public scanner, a logged-in teacher can click **Start Today’s Class**.
-5. Students scan their QR cards. The server decides whether the scan is Present, Late, or rejected.
-
-## Attendance timing rules
-
-The frontend never sends an attendance status. The backend calculates it using server time.
-
-- Before Attendance Start: scan is rejected
-- Attendance Start to Present Until: `Present`
-- Present Until to Attendance End: `Late`
-- After Attendance End: scan is rejected
-
-The backend accepts a timing configuration only when:
-
-```text
-Start Time < Present Until < Attendance End Time
-```
-
-## Student import format
-
-Students can be imported from `.csv` or `.xlsx` files. Column order does not matter, but these headers are required:
-
-```text
-Roll Number, Name, Course, Section
-```
-
-Duplicate roll numbers are skipped. Each new imported student receives a normal secure QR token.
-
-## Development mode
-
-For automatic React refresh while changing UI code, keep the backend running in one terminal:
-
+#### Option B: Manual Development Mode
+In Terminal 1 (Backend):
 ```powershell
 cd .\backend
-npm.cmd run dev
+npm run dev
 ```
 
-Then, in a second terminal:
-
+In Terminal 2 (Frontend):
 ```powershell
 cd .\frontend-react
-npm.cmd run dev
+npm run dev
 ```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-Open [http://localhost:5173](http://localhost:5173). The Vite server forwards API requests to the backend at port 5000.
-
-For normal usage, always use `http://localhost:5000`.
-
-## Build after frontend changes
-
-Whenever a React file is changed, create a new production build:
-
+#### Option C: Production Build
+Compile the frontend into static assets served directly by Express:
 ```powershell
 cd .\frontend-react
-npm.cmd run build
+npm run build
+cd ..\backend
+npm start
 ```
+Access the application at [http://localhost:5000](http://localhost:5000).
 
-Then refresh the browser with `Ctrl + Shift + R`.
+---
+
+## Student Import Format
+
+Bulk import accepts `.csv` and `.xlsx` files. Columns can appear in any order, with these exact header names:
+
+| Roll Number | Name | Course | Section |
+|---|---|---|---|
+| 241013106001 | Aayush | BCA | A |
+| 241013106002 | Abhay | BCA | A |
+| 241013106056 | Abhay Singh | BCA | B |
+
+Duplicate roll numbers within the same teacher account will be reported during import. Each newly imported student is automatically assigned a unique QR access card.
+
+---
+
+## License & Attribution
+
+Developed with Google DeepMind Antigravity for educational class attendance management.
