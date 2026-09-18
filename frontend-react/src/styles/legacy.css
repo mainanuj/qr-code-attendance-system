@@ -421,5 +421,68 @@
   }
 }
 
+/* ==========================================================================
+   Password Visibility Eye Toggle
+   ========================================================================== */
+.auth-password-wrap {
+  position: relative;
+  width: 100%;
+  display: block;
+  margin-top: 7px;
+}
+
+.auth-password-wrap input {
+  margin-top: 0 !important;
+  padding-right: 44px !important;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important;
+  border: 0 !important;
+  padding: 4px !important;
+  margin: 0 !important;
+  cursor: pointer;
+  color: #7b8ba5;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.18s ease, transform 0.15s ease;
+  line-height: 1;
+  z-index: 2;
+  box-shadow: none !important;
+}
+
+.auth-password-toggle svg {
+  display: block;
+  pointer-events: none;
+}
+
+.auth-password-toggle:hover {
+  color: #5362e8;
+  transform: translateY(-50%) scale(1.08);
+}
+
+body.light-theme .auth-password-toggle {
+  color: #7b8ba5;
+}
+
+body.light-theme .auth-password-toggle:hover {
+  color: #4353d9;
+}
+
+body:not(.light-theme) .auth-password-toggle {
+  color: #92a2c2;
+}
+
+body:not(.light-theme) .auth-password-toggle:hover {
+  color: #8fa0ff;
+}
+
+
 
 
