@@ -483,6 +483,59 @@ body:not(.light-theme) .auth-password-toggle:hover {
   color: #8fa0ff;
 }
 
+/* ==========================================================================
+   Forgot Password Link & Success Banner
+   ========================================================================== */
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+  margin-bottom: 2px;
+}
+
+.auth-forgot-link {
+  background: transparent !important;
+  border: 0 !important;
+  color: #5869d9 !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  text-decoration: none !important;
+  transition: color 0.18s ease;
+}
+
+.auth-forgot-link:hover {
+  color: #4052c9 !important;
+  text-decoration: underline !important;
+}
+
+body:not(.light-theme) .auth-forgot-link {
+  color: #8fa0ff !important;
+}
+
+body:not(.light-theme) .auth-forgot-link:hover {
+  color: #b0bdff !important;
+}
+
+.auth-success:not(:empty) {
+  padding: 10px 14px;
+  background: #edfbf7;
+  color: #128a76;
+  border: 1px solid #c0eee4;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin: 13px 0 0;
+}
+
+body:not(.light-theme) .auth-success:not(:empty) {
+  background: #0f2b26;
+  color: #5eead4;
+  border-color: #1a4d44;
+}
+
+
 
 
 

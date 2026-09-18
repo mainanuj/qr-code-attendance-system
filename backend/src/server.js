@@ -222,6 +222,39 @@ app.post('/api/auth/login', async (request, response, next) => {
   } catch (error) { next(error); }
 });
 
+app.post('/api/auth/reset-password', async (request, response, next) => {
+  const { username, email, newPassword } = request.body || {};
+  const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+  if (!normalizedUsername || !normalizedEmail || typeof newPassword !== 'string' || newPassword.length < 6) {
+    response.status(400).json({ error: 'Please enter your username, registered email, and a new password of at least 6 characters.' });
+    return;
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, name, username, email, password_hash FROM teachers WHERE (username = ? OR email = ?) AND email = ? LIMIT 1',
+      [normalizedUsername, normalizedUsername, normalizedEmail]
+    );
+    const teacher = rows[0];
+    if (!teacher) {
+      response.status(404).json({ error: 'No teacher account found matching that username and email.' });
+      return;
+    }
+
+    if (teacher.password_hash && (await bcrypt.compare(newPassword, teacher.password_hash))) {
+      response.status(400).json({ error: 'New password cannot be the same as your current password. Please choose a different password.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await pool.execute('UPDATE teachers SET password_hash = ? WHERE id = ?', [passwordHash, teacher.id]);
+
+    response.json({ message: 'Password has been reset successfully. Please log in with your new password.' });
+  } catch (error) { next(error); }
+});
+
 app.get('/api/auth/me', authenticate, (request, response) => response.json({ teacher: request.teacher }));
 
 app.use('/api/students', authenticate);
