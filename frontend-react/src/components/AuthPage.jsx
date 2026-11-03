@@ -7,7 +7,6 @@ export default function AuthPage({ onAuthenticated, back }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '', newPassword: '', confirmPassword: '' });
-  const [inputsUnlocked, setInputsUnlocked] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -34,8 +33,8 @@ export default function AuthPage({ onAuthenticated, back }) {
       }
       try {
         const result = await api.resetPassword({
-          username: form.username,
-          email: form.email,
+          username: form.username.trim(),
+          email: form.email.trim(),
           newPassword: form.newPassword
         });
         setSuccess(result.message || 'Password reset successfully! Please log in.');
@@ -57,7 +56,18 @@ export default function AuthPage({ onAuthenticated, back }) {
     }
 
     try {
-      const session = register ? await api.register(form) : await api.login({ username: form.username, password: form.password });
+      const payload = register
+        ? {
+            name: form.name.trim(),
+            username: form.username.trim(),
+            email: form.email.trim(),
+            password: form.password
+          }
+        : {
+            username: form.username.trim(),
+            password: form.password
+          };
+      const session = register ? await api.register(payload) : await api.login(payload);
       onAuthenticated(session);
     } catch (requestError) { setError(requestError.message); }
   }
@@ -93,12 +103,12 @@ export default function AuthPage({ onAuthenticated, back }) {
         </>
       ) : (
         <>
-          {register && <label>Full name<input value={form.name} onChange={update('name')} autoComplete="name" required /></label>}
-          <label>Username<input name="attendly-login-username" value={form.username} onFocus={() => setInputsUnlocked(true)} onChange={update('username')} autoComplete={register ? 'username' : 'off'} readOnly={!register && !inputsUnlocked} required /></label>
+          {register && <label>Full name<input value={form.name} onChange={update('name')} autoComplete="name" placeholder="Prof. Sharma" required /></label>}
+          <label>{register ? 'Username' : 'Username or email'}<input name="attendly-username" value={form.username} onChange={update('username')} autoComplete="username" placeholder={register ? 'Choose a unique username' : 'Username or email'} required /></label>
           {register && <label>Email<input value={form.email} onChange={update('email')} type="email" autoComplete="email" placeholder="teacher@college.edu" required /></label>}
           <label>Password
             <div className="auth-password-wrap">
-              <input name="attendly-login-password" value={form.password} onFocus={() => setInputsUnlocked(true)} onChange={update('password')} type={showPassword ? 'text' : 'password'} autoComplete="new-password" readOnly={!register && !inputsUnlocked} placeholder={register ? 'At least 6 characters' : 'Your password'} required />
+              <input name="attendly-password" value={form.password} onChange={update('password')} type={showPassword ? 'text' : 'password'} autoComplete={register ? 'new-password' : 'current-password'} placeholder={register ? 'At least 6 characters' : 'Your password'} required />
               <button type="button" className="auth-password-toggle" onClick={() => setShowPassword((prev) => !prev)} aria-label={showPassword ? 'Hide password' : 'Show password'} title={showPassword ? 'Hide password' : 'Show password'} tabIndex="-1">
                 <EyeIcon visible={showPassword} />
               </button>

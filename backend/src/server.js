@@ -212,10 +212,10 @@ app.post('/api/auth/login', async (request, response, next) => {
   const username = typeof request.body?.username === 'string' ? request.body.username.trim().toLowerCase() : '';
   const password = request.body?.password;
   try {
-    const [rows] = await pool.execute('SELECT id, name, username, email, password_hash FROM teachers WHERE username = ? LIMIT 1', [username]);
+    const [rows] = await pool.execute('SELECT id, name, username, email, password_hash FROM teachers WHERE LOWER(username) = ? OR LOWER(email) = ? LIMIT 1', [username, username]);
     const teacher = rows[0];
     if (!teacher || typeof password !== 'string' || !(await bcrypt.compare(password, teacher.password_hash))) {
-      response.status(401).json({ error: 'Incorrect email or password.' });
+      response.status(401).json({ error: 'Incorrect email, username, or password.' });
       return;
     }
     response.json({ teacher: { id: teacher.id, name: teacher.name, username: teacher.username, email: teacher.email }, token: createSession(teacher) });
@@ -234,7 +234,7 @@ app.post('/api/auth/reset-password', async (request, response, next) => {
 
   try {
     const [rows] = await pool.execute(
-      'SELECT id, name, username, email, password_hash FROM teachers WHERE (username = ? OR email = ?) AND email = ? LIMIT 1',
+      'SELECT id, name, username, email, password_hash FROM teachers WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND LOWER(email) = ? LIMIT 1',
       [normalizedUsername, normalizedUsername, normalizedEmail]
     );
     const teacher = rows[0];
