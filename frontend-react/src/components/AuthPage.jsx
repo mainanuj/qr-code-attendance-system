@@ -9,6 +9,7 @@ export default function AuthPage({ onAuthenticated, back }) {
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '', newPassword: '', confirmPassword: '' });
   const [inputsUnlocked, setInputsUnlocked] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const register = mode === 'register';
   const forgot = mode === 'forgot';
@@ -19,7 +20,9 @@ export default function AuthPage({ onAuthenticated, back }) {
     setError('');
     setSuccess('');
     setShowPassword(false);
+    setShowConfirmPassword(false);
     setShowNewPassword(false);
+    setForm((prev) => ({ ...prev, password: '', confirmPassword: '', newPassword: '' }));
   }
 
   async function submit(event) {
@@ -40,6 +43,17 @@ export default function AuthPage({ onAuthenticated, back }) {
         setForm((prev) => ({ ...prev, password: '', newPassword: '', confirmPassword: '' }));
       } catch (requestError) { setError(requestError.message); }
       return;
+    }
+
+    if (register) {
+      if (!form.password || form.password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+      if (form.password !== form.confirmPassword) {
+        setError('Password and confirm password do not match.');
+        return;
+      }
     }
 
     try {
@@ -90,6 +104,16 @@ export default function AuthPage({ onAuthenticated, back }) {
               </button>
             </div>
           </label>
+          {register && (
+            <label>Confirm Password
+              <div className="auth-password-wrap">
+                <input name="attendly-register-confirm-password" value={form.confirmPassword} onChange={update('confirmPassword')} type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" placeholder="Re-enter your password" required />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowConfirmPassword((prev) => !prev)} aria-label={showConfirmPassword ? 'Hide password' : 'Show password'} title={showConfirmPassword ? 'Hide password' : 'Show password'} tabIndex="-1">
+                  <EyeIcon visible={showConfirmPassword} />
+                </button>
+              </div>
+            </label>
+          )}
           {!register && (
             <div className="auth-forgot-row">
               <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>Forgot password?</button>
