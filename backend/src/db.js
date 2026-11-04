@@ -67,6 +67,18 @@ export async function verifyDatabase() {
       INDEX idx_session_date (session_date)
     )`);
 
+    await connection.execute(`CREATE TABLE IF NOT EXISTS email_otps (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      email VARCHAR(160) NOT NULL,
+      otp_code VARCHAR(10) NOT NULL,
+      purpose ENUM('register', 'reset_password') NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      attempts INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_email_purpose (email, purpose),
+      INDEX idx_expires_at (expires_at)
+    )`);
+
     // Migrate roll_number unique index from global to composite (teacher_id, roll_number)
     const [rollIndexes] = await connection.query(`
       SELECT INDEX_NAME FROM information_schema.STATISTICS

@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { databaseFailureDetails, pool, verifyDatabase } from './db.js';
+import { sendOtpEmail } from './email.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ const attendanceFields = `a.id, a.student_id AS studentId, s.name AS name, s.rol
   a.status, s.section AS section, UNIX_TIMESTAMP(a.created_at) * 1000 AS createdAt`;
 
 function makeToken() { return `ATD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
+function makeOtp() { return String(Math.floor(100000 + Math.random() * 900000)); }
 function validText(value, limit) { return typeof value === 'string' && value.trim() && value.trim().length <= limit; }
 function validUsername(value) { return typeof value === 'string' && /^[a-z0-9_.-]{3,40}$/i.test(value.trim()); }
 function isValidTime(value) { return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value); }
@@ -179,7 +181,7 @@ app.post('/api/public/check-in', async (request, response, next) => {
   }
 });
 
-app.post('/api/auth/register', async (request, response, next) => {
+app.post('/api/auth/send-register-otp', async (request, response, next) => {
   const { name, username, email, password } = request.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
@@ -187,25 +189,104 @@ app.post('/api/auth/register', async (request, response, next) => {
     response.status(400).json({ error: 'Enter a name, unique username (3-40 letters, numbers, ., _, -), valid email, and password of at least 6 characters.' });
     return;
   }
-  const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
-    const [existing] = await connection.execute('SELECT id FROM teachers WHERE email = ? OR username = ? LIMIT 1', [normalizedEmail, normalizedUsername]);
-    if (existing.length) { await connection.rollback(); response.status(409).json({ error: 'This email or username is already in use.' }); return; }
-    const [teacherCount] = await connection.query('SELECT COUNT(*) AS count FROM teachers');
-    const teacher = { id: crypto.randomUUID(), name: name.trim(), username: normalizedUsername, email: normalizedEmail };
-    const passwordHash = await bcrypt.hash(password, 12);
-    await connection.execute('INSERT INTO teachers (id, name, username, email, password_hash) VALUES (?, ?, ?, ?, ?)', [teacher.id, teacher.name, teacher.username, teacher.email, passwordHash]);
-    if (teacherCount[0].count === 0) await connection.execute(`UPDATE students s
-      LEFT JOIN teachers previous_teacher ON previous_teacher.id = s.teacher_id
-      SET s.teacher_id = ?
-      WHERE s.teacher_id IS NULL OR previous_teacher.id IS NULL`, [teacher.id]);
-    await connection.commit();
-    response.status(201).json({ teacher, token: createSession(teacher) });
-  } catch (error) {
-    await connection.rollback();
-    next(error);
-  } finally { connection.release(); }
+    const [existing] = await pool.execute('SELECT id FROM teachers WHERE LOWER(email) = ? OR LOWER(username) = ? LIMIT 1', [normalizedEmail, normalizedUsername]);
+    if (existing.length) {
+      response.status(409).json({ error: 'This email or username is already in use.' });
+      return;
+    }
+
+    const [recent] = await pool.execute(
+      `SELECT created_at FROM email_otps 
+       WHERE email = ? AND purpose = 'register' AND created_at > NOW() - INTERVAL 60 SECOND
+       ORDER BY created_at DESC LIMIT 1`,
+      [normalizedEmail]
+    );
+    if (recent.length) {
+      response.status(429).json({ error: 'A verification code was already sent recently. Please wait 60 seconds before requesting another code.' });
+      return;
+    }
+
+    const otp = makeOtp();
+    await pool.execute('DELETE FROM email_otps WHERE email = ? AND purpose = ?', [normalizedEmail, 'register']);
+    await pool.execute(
+      'INSERT INTO email_otps (id, email, otp_code, purpose, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))',
+      [crypto.randomUUID(), normalizedEmail, otp, 'register']
+    );
+
+    await sendOtpEmail({
+      toEmail: normalizedEmail,
+      otpCode: otp,
+      purpose: 'register',
+      recipientName: name.trim()
+    });
+
+    response.json({ message: `Verification code sent to ${normalizedEmail}. Please check your inbox or spam folder.` });
+  } catch (error) { next(error); }
+});
+
+app.post('/api/auth/register', async (request, response, next) => {
+  const { name, username, email, password, otp } = request.body || {};
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
+  const normalizedOtp = typeof otp === 'string' ? otp.trim() : '';
+
+  if (!validText(name, 120) || !validUsername(normalizedUsername) || !/^\S+@\S+\.\S+$/.test(normalizedEmail) || typeof password !== 'string' || password.length < 6) {
+    response.status(400).json({ error: 'Enter a name, unique username (3-40 letters, numbers, ., _, -), valid email, and password of at least 6 characters.' });
+    return;
+  }
+  if (!normalizedOtp || normalizedOtp.length !== 6) {
+    response.status(400).json({ error: 'Please enter the 6-digit verification code sent to your email.' });
+    return;
+  }
+
+  try {
+    const [otps] = await pool.execute(
+      `SELECT id, otp_code, expires_at, attempts FROM email_otps 
+       WHERE email = ? AND purpose = 'register' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [normalizedEmail]
+    );
+    const otpRecord = otps[0];
+    if (!otpRecord) {
+      response.status(400).json({ error: 'No verification code found for this email. Please click "Send Verification Code" first.' });
+      return;
+    }
+    if (new Date(otpRecord.expires_at).getTime() < Date.now()) {
+      response.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+      return;
+    }
+    if (otpRecord.attempts >= 5) {
+      response.status(400).json({ error: 'Too many incorrect attempts. Please request a new code.' });
+      return;
+    }
+    if (otpRecord.otp_code !== normalizedOtp) {
+      await pool.execute('UPDATE email_otps SET attempts = attempts + 1 WHERE id = ?', [otpRecord.id]);
+      response.status(400).json({ error: 'Invalid verification code. Please check your email and try again.' });
+      return;
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [existing] = await connection.execute('SELECT id FROM teachers WHERE LOWER(email) = ? OR LOWER(username) = ? LIMIT 1', [normalizedEmail, normalizedUsername]);
+      if (existing.length) { await connection.rollback(); response.status(409).json({ error: 'This email or username is already in use.' }); return; }
+      const [teacherCount] = await connection.query('SELECT COUNT(*) AS count FROM teachers');
+      const teacher = { id: crypto.randomUUID(), name: name.trim(), username: normalizedUsername, email: normalizedEmail };
+      const passwordHash = await bcrypt.hash(password, 12);
+      await connection.execute('INSERT INTO teachers (id, name, username, email, password_hash) VALUES (?, ?, ?, ?, ?)', [teacher.id, teacher.name, teacher.username, teacher.email, passwordHash]);
+      if (teacherCount[0].count === 0) await connection.execute(`UPDATE students s
+        LEFT JOIN teachers previous_teacher ON previous_teacher.id = s.teacher_id
+        SET s.teacher_id = ?
+        WHERE s.teacher_id IS NULL OR previous_teacher.id IS NULL`, [teacher.id]);
+      await connection.execute('DELETE FROM email_otps WHERE id = ?', [otpRecord.id]);
+      await connection.commit();
+      response.status(201).json({ teacher, token: createSession(teacher) });
+    } catch (error) {
+      await connection.rollback();
+      next(error);
+    } finally { connection.release(); }
+  } catch (error) { next(error); }
 });
 
 app.post('/api/auth/login', async (request, response, next) => {
@@ -222,17 +303,93 @@ app.post('/api/auth/login', async (request, response, next) => {
   } catch (error) { next(error); }
 });
 
-app.post('/api/auth/reset-password', async (request, response, next) => {
-  const { username, email, newPassword } = request.body || {};
+app.post('/api/auth/send-reset-otp', async (request, response, next) => {
+  const { username, email } = request.body || {};
   const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-  if (!normalizedUsername || !normalizedEmail || typeof newPassword !== 'string' || newPassword.length < 6) {
-    response.status(400).json({ error: 'Please enter your username, registered email, and a new password of at least 6 characters.' });
+  if (!normalizedUsername || !normalizedEmail) {
+    response.status(400).json({ error: 'Please enter your username and registered email.' });
     return;
   }
 
   try {
+    const [rows] = await pool.execute(
+      'SELECT id, name, username, email FROM teachers WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND LOWER(email) = ? LIMIT 1',
+      [normalizedUsername, normalizedUsername, normalizedEmail]
+    );
+    const teacher = rows[0];
+    if (!teacher) {
+      response.status(404).json({ error: 'No teacher account found matching that username and email.' });
+      return;
+    }
+
+    const [recent] = await pool.execute(
+      `SELECT created_at FROM email_otps 
+       WHERE email = ? AND purpose = 'reset_password' AND created_at > NOW() - INTERVAL 60 SECOND
+       ORDER BY created_at DESC LIMIT 1`,
+      [normalizedEmail]
+    );
+    if (recent.length) {
+      response.status(429).json({ error: 'A verification code was already sent recently. Please wait 60 seconds before requesting another code.' });
+      return;
+    }
+
+    const otp = makeOtp();
+    await pool.execute('DELETE FROM email_otps WHERE email = ? AND purpose = ?', [normalizedEmail, 'reset_password']);
+    await pool.execute(
+      'INSERT INTO email_otps (id, email, otp_code, purpose, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))',
+      [crypto.randomUUID(), normalizedEmail, otp, 'reset_password']
+    );
+
+    await sendOtpEmail({
+      toEmail: normalizedEmail,
+      otpCode: otp,
+      purpose: 'reset_password',
+      recipientName: teacher.name || 'Teacher'
+    });
+
+    response.json({ message: `Verification code sent to ${normalizedEmail}. Please check your inbox or spam folder.` });
+  } catch (error) { next(error); }
+});
+
+app.post('/api/auth/reset-password', async (request, response, next) => {
+  const { username, email, otp, newPassword } = request.body || {};
+  const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedOtp = typeof otp === 'string' ? otp.trim() : '';
+
+  if (!normalizedUsername || !normalizedEmail || !normalizedOtp || typeof newPassword !== 'string' || newPassword.length < 6) {
+    response.status(400).json({ error: 'Please enter your username, email, 6-digit verification code, and a new password of at least 6 characters.' });
+    return;
+  }
+
+  try {
+    const [otps] = await pool.execute(
+      `SELECT id, otp_code, expires_at, attempts FROM email_otps 
+       WHERE email = ? AND purpose = 'reset_password' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [normalizedEmail]
+    );
+    const otpRecord = otps[0];
+    if (!otpRecord) {
+      response.status(400).json({ error: 'No verification code found for this email. Please click "Send Verification Code" first.' });
+      return;
+    }
+    if (new Date(otpRecord.expires_at).getTime() < Date.now()) {
+      response.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+      return;
+    }
+    if (otpRecord.attempts >= 5) {
+      response.status(400).json({ error: 'Too many incorrect attempts. Please request a new code.' });
+      return;
+    }
+    if (otpRecord.otp_code !== normalizedOtp) {
+      await pool.execute('UPDATE email_otps SET attempts = attempts + 1 WHERE id = ?', [otpRecord.id]);
+      response.status(400).json({ error: 'Invalid verification code. Please check your email and try again.' });
+      return;
+    }
+
     const [rows] = await pool.execute(
       'SELECT id, name, username, email, password_hash FROM teachers WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND LOWER(email) = ? LIMIT 1',
       [normalizedUsername, normalizedUsername, normalizedEmail]
@@ -250,6 +407,7 @@ app.post('/api/auth/reset-password', async (request, response, next) => {
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await pool.execute('UPDATE teachers SET password_hash = ? WHERE id = ?', [passwordHash, teacher.id]);
+    await pool.execute('DELETE FROM email_otps WHERE id = ?', [otpRecord.id]);
 
     response.json({ message: 'Password has been reset successfully. Please log in with your new password.' });
   } catch (error) { next(error); }
