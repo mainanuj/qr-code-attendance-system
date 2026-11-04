@@ -1,13 +1,8 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
 dotenv.config();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const logoPath = path.resolve(__dirname, 'assets/attendly-logo.png');
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const LOGO_CDN_URL = 'https://raw.githubusercontent.com/mainanuj/qr-code-attendance-system/main/backend/src/assets/attendly-logo.png';
 
 export async function sendOtpEmail({ toEmail, otpCode, purpose, recipientName = 'Teacher' }) {
   const isRegister = purpose === 'register';
@@ -36,7 +31,7 @@ export async function sendOtpEmail({ toEmail, otpCode, purpose, recipientName = 
           <!-- Header with Official Attendly Logo -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #23314f; background: linear-gradient(180deg, #1d2b49 0%, #162036 100%);">
-              <img src="cid:attendly-brand-logo" width="56" height="56" alt="Attendly Logo" style="display: block; margin: 0 auto 12px auto; width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 245, 212, 0.35); border: 1px solid rgba(56, 189, 248, 0.3);" />
+              <img src="${LOGO_CDN_URL}" width="56" height="56" alt="Attendly Logo" style="display: block; margin: 0 auto 12px auto; width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 245, 212, 0.35); border: 1px solid rgba(56, 189, 248, 0.3);" />
               <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Attendly</h2>
               <p style="margin: 4px 0 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #818cf8;">QR Attendance System</p>
             </td>
@@ -86,51 +81,18 @@ export async function sendOtpEmail({ toEmail, otpCode, purpose, recipientName = 
 </html>
 `;
 
-  // 1. If GMAIL_APP_PASS and GMAIL_USER are configured, use Gmail SMTP directly with inline CID logo attachment
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASS) {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASS.replace(/\s+/g, '') // strips spaces if user copied with spaces
-      }
-    });
-
-    const attachments = fs.existsSync(logoPath) ? [
-      {
-        filename: 'attendly-logo.png',
-        path: logoPath,
-        cid: 'attendly-brand-logo'
-      }
-    ] : [];
-
-    const info = await transporter.sendMail({
-      from: `"${process.env.BREVO_SENDER_NAME || 'Attendly'}" <${process.env.GMAIL_USER}>`,
-      to: toEmail,
-      subject,
-      html: htmlContent,
-      attachments
-    });
-    console.log('OTP sent via Gmail SMTP with logo:', info.messageId);
-    return { messageId: info.messageId, provider: 'gmail' };
-  }
-
-  // 2. Otherwise use Brevo API
-  const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'kumaranuj04754@gmail.com';
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'tribalninja1729@gmail.com';
   const senderName = process.env.BREVO_SENDER_NAME || 'Attendly';
 
-  if (!apiKey) {
-    throw new Error('Email service is not configured. Add GMAIL_APP_PASS or BREVO_API_KEY.');
+  if (!brevoApiKey) {
+    throw new Error('BREVO_API_KEY is not set. Add it in your .env or Render environment variables.');
   }
-
-  const base64Logo = fs.existsSync(logoPath) ? fs.readFileSync(logoPath).toString('base64') : '';
-  const attachment = base64Logo ? [{ name: 'attendly-logo.png', content: base64Logo }] : undefined;
 
   const response = await fetch(BREVO_API_URL, {
     method: 'POST',
     headers: {
-      'api-key': apiKey,
+      'api-key': brevoApiKey,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
@@ -138,8 +100,7 @@ export async function sendOtpEmail({ toEmail, otpCode, purpose, recipientName = 
       sender: { name: senderName, email: senderEmail },
       to: [{ email: toEmail, name: recipientName }],
       subject,
-      htmlContent,
-      attachment
+      htmlContent
     })
   });
 
@@ -155,6 +116,6 @@ export async function sendOtpEmail({ toEmail, otpCode, purpose, recipientName = 
   }
 
   const result = await response.json();
-  console.log('OTP sent via Brevo API:', result.messageId);
-  return result;
+  console.log('OTP sent via Brevo HTTPS API:', result.messageId);
+  return { messageId: result.messageId, provider: 'brevo' };
 }
